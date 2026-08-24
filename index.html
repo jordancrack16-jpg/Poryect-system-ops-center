@@ -18,6 +18,8 @@
   }
   body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px;min-height:100vh;}
   button,input,select,textarea{font:inherit;color:inherit;}
+  input,select,textarea{background:var(--panel2);}
+  input::placeholder,textarea::placeholder{color:var(--text2);opacity:1;}
   button{cursor:pointer;}
   ::-webkit-scrollbar{height:8px;width:8px;}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
@@ -199,7 +201,8 @@
   .task-card .tmeta{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text2);margin-bottom:12px;}
   .task-card .tprod{font-size:.72rem;color:var(--purple);margin-bottom:12px;background:var(--purple-bg);display:inline-block;padding:4px 10px;border-radius:100px;}
   .task-card label{display:block;font-size:.7rem;color:var(--text2);margin:10px 0 5px;text-transform:uppercase;letter-spacing:.03em;}
-  .task-card input,.task-card select{width:100%;font-size:.82rem;padding:8px 10px;border-radius:8px;}
+  .task-card input,.task-card select,.task-card textarea{width:100%;font-size:.82rem;padding:8px 10px;border-radius:8px;background:var(--panel);border:1px solid var(--border);color:var(--text);}
+  .task-card textarea{resize:vertical;min-height:60px;font-family:inherit;}
   .task-card input[type=date]{background:var(--blue-bg);border:1px solid var(--blue);color:var(--text);}
   .task-card select{background:var(--purple-bg);border:1px solid var(--purple);color:var(--text);}
   .task-card .boardlinks-wrap input[type=text]{background:var(--green-bg);border:1px solid var(--green);color:var(--text);}
