@@ -637,6 +637,7 @@ function emptyProduct(name, country, niche, responsible){
     originalLink:'', pageLink:'', driveLink:'', docsLink:'', notes:'', boardLinks: [''], refLinks: [''],
     phase: 'preparacion', createdAt: today(),
     ads: { responsible:'Cami', status:'pendiente', textoStatus:'pendiente', count:0, driveLink:'', copyLink:'', fechaInicio:'', fechaFinal:'', textoPrincipal:'', hook:'', cta:'', textoResponsable:'Meli', textoDoc:'', activo:false, bm:'', cuentaPublicitaria:'', sendyCorreo:'', sendyContrasena:'', sendyWhatsapp:'', sendyId:'' },
+    campaignData: { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', id:'' },
     funnel: { responsible:'Jesús', country: country || '', status:'pendiente', linkFlujo:'', linkDrive:'', observaciones:'', testeoEstado:'pendiente' },
     campaignEntries: [],
     idealCosts: { costoMensajeIdeal:'', costoCompraIdeal:'' },
@@ -889,6 +890,14 @@ function migrateDB(d){
     if(p.ads && p.ads.bm === undefined){ p.ads.bm = ''; }
     if(p.ads && p.ads.cuentaPublicitaria === undefined){ p.ads.cuentaPublicitaria = ''; }
     if(p.ads && p.ads.sendyCorreo === undefined){ p.ads.sendyCorreo = ''; p.ads.sendyContrasena = ''; p.ads.sendyWhatsapp = ''; p.ads.sendyId = ''; }
+    if(!p.campaignData){ p.campaignData = { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', id:'' }; }
+    if(!p.campaignData.linksArchivos || p.campaignData.linksArchivos.length===0){ p.campaignData.linksArchivos = ['']; }
+    if(p.campaignData.textoAnuncio === undefined) p.campaignData.textoAnuncio = '';
+    if(p.campaignData.fraseActivadora === undefined) p.campaignData.fraseActivadora = '';
+    if(p.campaignData.bm === undefined) p.campaignData.bm = '';
+    if(p.campaignData.cuentaPublicitaria === undefined) p.campaignData.cuentaPublicitaria = '';
+    if(p.campaignData.cuentaSendy === undefined) p.campaignData.cuentaSendy = '';
+    if(p.campaignData.id === undefined) p.campaignData.id = '';
     if(p.funnel && p.funnel.testeoEstado === undefined){ p.funnel.testeoEstado = 'pendiente'; }
     if(p.optimizacionActiva === undefined && p.campaignLaunchStatus === undefined){ p.campaignLaunchStatus = 'pendiente'; }
     if(p.activadorFlujos === undefined){ p.activadorFlujos = ''; }
@@ -922,6 +931,19 @@ function migrateDB(d){
         if(a.validado === undefined) a.validado = (a.estado === 'ganador');
         delete a.hook; delete a.pais; delete a.gasto; delete a.ventas; delete a.roas; delete a.estado;
       });
+    }
+  });
+  (d.weekTasks||[]).forEach(function(t){
+    if(t.taskTypeId === 'edicion_anuncios' && t.producto){
+      var linkedProd = (d.products||[]).find(function(p){ return p.id === t.producto; });
+      if(linkedProd && linkedProd.campaignData){
+        var cdArchivos = linkedProd.campaignData.linksArchivos || [];
+        if(cdArchivos.join('')==='' && t.linksArchivos && t.linksArchivos.join('')!==''){
+          linkedProd.campaignData.linksArchivos = t.linksArchivos.slice();
+        }
+        if(!linkedProd.campaignData.textoAnuncio && t.textoAnuncio){ linkedProd.campaignData.textoAnuncio = t.textoAnuncio; }
+        if(!linkedProd.campaignData.fraseActivadora && t.fraseActivadora){ linkedProd.campaignData.fraseActivadora = t.fraseActivadora; }
+      }
     }
   });
 }
@@ -1791,15 +1813,29 @@ function taskCardHTML(t){
     bodyHTML = fechaBlock + sendyAccountsBlock(t) + statusBlock + linksBlock1 + roundsBlock;
 
   } else if(t.taskTypeId === 'edicion_anuncios'){
-    var productoSelectBlock = '<label>Nombre del producto</label><select data-wt="'+t.id+'" data-field="producto">' +
-      '<option value="">— Elegir producto —</option>' +
-      db.products.map(function(p){ return '<option value="'+p.id+'"'+(t.producto===p.id?' selected':'')+'>'+esc(p.name)+'</option>'; }).join('') +
-    '</select>';
+    var productoSelectBlock = productoSelectBlockFor(t);
     var linksOferta = taskLinksBlock(t, 'links', 'Links de la oferta', 'Link de la oferta');
-    var linksArchivos = taskLinksBlock(t, 'linksArchivos', 'Links de los archivos listos para subir', 'Link del archivo');
-    var textoAnuncioBlock = '<label>Texto del anuncio</label><textarea data-wt="'+t.id+'" data-field="textoAnuncio" placeholder="Escribe aquí el texto del anuncio">'+esc(t.textoAnuncio)+'</textarea>';
-    var fraseActivadoraBlock = '<label>Frase activadora en Sendy Pro</label><input type="text" placeholder="Ej: Escribe QUIERO para recibir tu regalo" value="'+esc(t.fraseActivadora)+'" data-wt="'+t.id+'" data-field="fraseActivadora">';
-    bodyHTML = productoSelectBlock + fechaBlock + linksOferta + linksArchivos + textoAnuncioBlock + fraseActivadoraBlock + statusBlock;
+    var prodEA = t.producto ? findProduct(t.producto) : null;
+    var sharedEA = prodEA ? campaignSharedFieldsBlock(prodEA) :
+      ('<label>Links de los archivos listos para subir</label>' + taskLinksBlockRaw(t, 'linksArchivos', 'Link del archivo') +
+       '<label>Texto del anuncio</label><textarea data-wt="'+t.id+'" data-field="textoAnuncio" placeholder="Escribe aquí el texto del anuncio">'+esc(t.textoAnuncio)+'</textarea>' +
+       '<label>Frase activadora en Sendy Pro</label><input type="text" placeholder="Ej: Escribe QUIERO para recibir tu regalo" value="'+esc(t.fraseActivadora)+'" data-wt="'+t.id+'" data-field="fraseActivadora">');
+    bodyHTML = productoSelectBlock + fechaBlock + linksOferta + sharedEA + statusBlock;
+
+  } else if(t.taskTypeId === 'campanas_testeo'){
+    var productoSelectBlockC = productoSelectBlockFor(t);
+    var prodC = t.producto ? findProduct(t.producto) : null;
+    var campanaBody;
+    if(prodC){
+      campanaBody = campaignSharedFieldsBlock(prodC) +
+        '<label>BM</label><input type="text" placeholder="Ej: BM 10293847" value="'+esc(prodC.campaignData.bm)+'" data-pid="'+prodC.id+'" data-field="campaignData.bm">' +
+        '<label>Cuenta publicitaria</label><input type="text" placeholder="Ej: Cuenta Ads 1" value="'+esc(prodC.campaignData.cuentaPublicitaria)+'" data-pid="'+prodC.id+'" data-field="campaignData.cuentaPublicitaria">' +
+        '<label>Cuenta de Sendy</label><input type="text" placeholder="Ej: equipo@dominio.com" value="'+esc(prodC.campaignData.cuentaSendy)+'" data-pid="'+prodC.id+'" data-field="campaignData.cuentaSendy">' +
+        '<label>ID</label><input type="text" placeholder="Ej: SDY-1029" value="'+esc(prodC.campaignData.id)+'" data-pid="'+prodC.id+'" data-field="campaignData.id">';
+    } else {
+      campanaBody = '<div style="font-size:.75rem;color:var(--text2);margin-top:8px;">Elige un producto arriba para cargar los links, el texto del anuncio y las cuentas de esa campaña.</div>';
+    }
+    bodyHTML = productoSelectBlockC + fechaBlock + campanaBody + statusBlock;
 
   } else {
     var linksBlockDefault = taskLinksBlock(t, 'links', 'Links', type.linkLabel||'Link');
@@ -1825,6 +1861,28 @@ function taskLinksBlock(t, field, label, placeholder){
     '</div>';
   }).join('');
   return '<label>'+esc(label)+'</label><div class="boardlinks-wrap">'+rows+'<button class="btn-ghost add-link-btn" data-action="addTaskArr" data-wtid="'+t.id+'" data-arr="'+field+'">+ link</button></div>';
+}
+function taskLinksBlockRaw(t, field, placeholder){
+  var arr = getDeep(t, field);
+  if(!arr || arr.length===0) arr = [''];
+  var rows = arr.map(function(u, idx){
+    return '<div class="boardlink-row"><input type="text" placeholder="'+esc(placeholder)+' '+(idx+1)+'" value="'+esc(u)+'" data-wt="'+t.id+'" data-field="'+field+'.'+idx+'">' +
+      (u ? '<button class="mini-open" data-action="openLink" data-val="'+esc(u)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
+      (arr.length>1 ? '<button class="mini-del" data-action="delTaskArr" data-wtid="'+t.id+'" data-arr="'+field+'" data-idx="'+idx+'">✕</button>' : '') +
+    '</div>';
+  }).join('');
+  return '<div class="boardlinks-wrap">'+rows+'<button class="btn-ghost add-link-btn" data-action="addTaskArr" data-wtid="'+t.id+'" data-arr="'+field+'">+ link</button></div>';
+}
+function productoSelectBlockFor(t){
+  return '<label>Nombre del producto</label><select data-wt="'+t.id+'" data-field="producto">' +
+    '<option value="">— Elegir producto —</option>' +
+    db.products.map(function(p){ return '<option value="'+p.id+'"'+(t.producto===p.id?' selected':'')+'>'+esc(p.name)+'</option>'; }).join('') +
+  '</select>';
+}
+function campaignSharedFieldsBlock(p){
+  return '<label>Links de los archivos listos para subir</label>' + multiLinksEditor(p, 'campaignData.linksArchivos') +
+    '<label>Texto del anuncio</label><textarea data-pid="'+p.id+'" data-field="campaignData.textoAnuncio" placeholder="Escribe aquí el texto del anuncio">'+esc(p.campaignData.textoAnuncio)+'</textarea>' +
+    '<label>Frase activadora / palabra clave en Sendy Pro</label><input type="text" placeholder="Ej: Escribe QUIERO para recibir tu regalo" value="'+esc(p.campaignData.fraseActivadora)+'" data-pid="'+p.id+'" data-field="campaignData.fraseActivadora">';
 }
 function sendyAccountsBlock(t){
   var accounts = t.sendyAccounts && t.sendyAccounts.length ? t.sendyAccounts : [{correo:'',contrasena:''}];
