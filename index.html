@@ -285,7 +285,7 @@
     <header class="topbar">
       <div class="searchbox">🔍 <input type="text" id="globalSearch" placeholder="Buscar en todo..."></div>
       <div class="top-right">
-        <div class="cloud-status"><span class="dot"></span> En la nube</div>
+        <div class="cloud-status"><span class="dot" id="cloudStatusDot"></span> <span id="cloudStatusText">En la nube</span></div>
         <div class="profile-display" id="profileDisplay"><span class="pname">—</span><span class="prole">—</span></div>
         <button class="icon-btn">🔔<span class="nbadge" id="notifBadge">0</span></button>
         <button class="btn-ghost" id="signOutBtn">Cerrar sesión</button>
@@ -510,8 +510,25 @@ async function loadProfileAndEnter(user){
     }
     currentProfile = { id: res.data.id, full_name: res.data.full_name, role: res.data.role, email: user.email };
     renderProfileDisplay();
+
+    /* --- Cargar ops_center_state.data como fuente principal ANTES de renderizar --- */
+    showAuthScreen('loadingScreen');
+    try{
+      await loadDBFromSupabase();
+    }catch(dbErr){
+      var dbMsg = dbErr && dbErr.message;
+      if(dbMsg === 'EMPTY_REMOTE_WITH_BACKUP'){
+        showFatalDBError('OPS CENTER en la nube está vacío, pero se detectó un backup local. No se subirá automáticamente. Revisa la consola para más detalles.');
+      } else {
+        showFatalDBError('No se encontró la base de datos principal de OPS CENTER.');
+      }
+      return;
+    }
+
     showApp();
-    renderApp(); // arranca la app existente, con los datos actuales de localStorage intactos
+    renderApp(); // ahora con db proveniente de Supabase (ops_center_state)
+    subscribeRealtime();
+    setCloudStatus('synced');
   }catch(err){
     setLoginError('No se pudo conectar con Supabase. Intenta de nuevo.');
     showAuthScreen('loginScreen');
@@ -564,16 +581,19 @@ async function handleLoginSubmit(){
 
 async function handleSignOut(){
   try{ await supabaseClient.auth.signOut(); }catch(err){}
+  unsubscribeRealtime();
+  if(saveDebounceTimer){ clearTimeout(saveDebounceTimer); saveDebounceTimer = null; }
   currentProfile = null;
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPassword').value = '';
   setLoginError(null);
   showAuthScreen('loginScreen');
-  // localStorage NO se toca — los datos siguen intactos para la próxima sesión
+  // localStorage NO se toca — los datos siguen intactos (backup) para la próxima sesión
 }
 
 supabaseClient.auth.onAuthStateChange(function(event){
   if(event === 'SIGNED_OUT'){
+    unsubscribeRealtime();
     currentProfile = null;
     showAuthScreen('loginScreen');
   }
@@ -717,19 +737,109 @@ var TUTORIAL_CATALOG = [
   { id:'tut_revision_campanas', label:'Revisión de campañas (3 veces al día)' }
 ];
 
-var db = loadDB();
-function loadDB(){
-  try{
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      var parsed = JSON.parse(raw);
-      migrateDB(parsed);
-      return parsed;
+/* ============================================================
+   FUENTE PRINCIPAL DE DATOS: Supabase (ops_center_state)
+   localStorage[STORAGE_KEY] es SOLO un backup local.
+   ============================================================ */
+var WORKSPACE = 'whatsapp-100k';
+var db = null; // se asigna en loadDBFromSupabase(), antes de renderApp()
+var isApplyingRemoteUpdate = false;
+var saveDebounceTimer = null;
+var realtimeChannel = null;
+
+function setCloudStatus(state){
+  var dot = document.getElementById('cloudStatusDot');
+  var txt = document.getElementById('cloudStatusText');
+  if(!dot || !txt) return;
+  var map = {
+    synced:  { text:'En la nube',    color:'var(--green)' },
+    saving:  { text:'Guardando...',  color:'var(--yellow)' },
+    offline: { text:'Sin conexión',  color:'var(--red)' }
+  };
+  var s = map[state] || map.synced;
+  txt.textContent = s.text;
+  dot.style.background = s.color;
+}
+
+function showFatalDBError(msg){
+  showAuthScreen('loadingScreen');
+  var box = document.querySelector('#loadingScreen .auth-box');
+  if(box){
+    box.innerHTML = '<div class="logo" style="justify-content:center;margin-bottom:10px;"><div class="ico">🧩</div>OPS CENTER</div>'
+      + '<p class="auth-error" style="display:block;">'+msg+'</p>';
+  }
+  console.error('OPS CENTER:', msg);
+}
+
+/* Carga ops_center_state.data como fuente principal. Lanza un Error con
+   .message NOT_FOUND / EMPTY_REMOTE / EMPTY_REMOTE_WITH_BACKUP si no puede cargar. */
+async function loadDBFromSupabase(){
+  var res = await supabaseClient
+    .from('ops_center_state')
+    .select('data, updated_at')
+    .eq('workspace', WORKSPACE)
+    .single();
+
+  if(res.error || !res.data){
+    throw new Error('NOT_FOUND');
+  }
+
+  var remoteData = res.data.data;
+  if(!remoteData || typeof remoteData !== 'object'){
+    var backupRaw = null;
+    try{ backupRaw = localStorage.getItem(STORAGE_KEY); }catch(e){}
+    if(backupRaw){
+      console.warn('OPS CENTER: ops_center_state.data está vacío/inválido en Supabase, pero existe un backup local en localStorage. NO se subirá automáticamente para evitar sobrescribir datos reales.');
+      throw new Error('EMPTY_REMOTE_WITH_BACKUP');
     }
-  }catch(e){}
-  var d = defaultDB();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
-  return d;
+    throw new Error('EMPTY_REMOTE');
+  }
+
+  db = remoteData;
+  migrateDB(db);
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
+  if(res.data.updated_at){
+    try{ localStorage.setItem('ops_center_last_sync', res.data.updated_at); }catch(e){}
+  }
+  return db;
+}
+
+/* ---------------- Realtime ---------------- */
+function subscribeRealtime(){
+  if(realtimeChannel) return;
+  realtimeChannel = supabaseClient
+    .channel('ops_center_state_changes')
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'ops_center_state',
+      filter: 'workspace=eq.'+WORKSPACE
+    }, function(payload){
+      try{
+        var incoming = payload && payload.new && payload.new.data;
+        if(!incoming || typeof incoming !== 'object') return;
+        try{
+          if(JSON.stringify(incoming) === JSON.stringify(db)) return; // sin cambios reales
+        }catch(e){}
+        isApplyingRemoteUpdate = true;
+        db = incoming;
+        migrateDB(db);
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
+        renderApp();
+        setCloudStatus('synced');
+      }catch(err){
+        console.error('OPS CENTER: error aplicando cambio remoto de Supabase', err);
+      }finally{
+        isApplyingRemoteUpdate = false;
+      }
+    })
+    .subscribe();
+}
+function unsubscribeRealtime(){
+  if(realtimeChannel){
+    try{ supabaseClient.removeChannel(realtimeChannel); }catch(e){}
+    realtimeChannel = null;
+  }
 }
 function migrateDB(d){
   if(!d.boardResp){ d.boardResp = { links:'Jordan', ads:'Cami', funnel:'Jesús', texto:'Meli', campanas:'Jordan', linkAds:'Cami', linkCopy:'Meli', activador:'Jesús', sendy:'Jesús' }; }
@@ -810,13 +920,47 @@ function migrateDB(d){
     }
   });
 }
+/* saveDB(): guarda backup local inmediato + programa (debounce) el guardado en Supabase.
+   Si el cambio proviene de un UPDATE remoto vía Realtime (isApplyingRemoteUpdate === true),
+   NO se reprograma un guardado — evita el bucle guardar → Realtime → guardar → Realtime. */
 function saveDB(){
+  if(isApplyingRemoteUpdate) return;
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
+  setCloudStatus('saving');
+  if(saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(function(){
+    saveDebounceTimer = null;
+    persistToSupabase();
+  }, 600);
 }
+
+async function persistToSupabase(){
+  try{
+    var nowIso = new Date().toISOString();
+    var res = await supabaseClient
+      .from('ops_center_state')
+      .update({ data: db, updated_at: nowIso })
+      .eq('workspace', WORKSPACE);
+    if(res.error){
+      console.error('OPS CENTER: error guardando en Supabase', res.error);
+      setCloudStatus('offline');
+      toast('No se pudo sincronizar con la nube. Se guardó una copia local.');
+      return;
+    }
+    try{ localStorage.setItem('ops_center_last_sync', nowIso); }catch(e){}
+    setCloudStatus('synced');
+  }catch(err){
+    console.error('OPS CENTER: excepción guardando en Supabase', err);
+    setCloudStatus('offline');
+    toast('No se pudo sincronizar con la nube. Se guardó una copia local.');
+  }
+}
+
 function resetDemo(){
   if(!confirm('Esto borrará todo y volverá a los datos de ejemplo. ¿Continuar?')) return;
   db = defaultDB();
-  saveDB();
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
+  persistToSupabase();
   toast('Datos reiniciados');
   renderApp();
 }
