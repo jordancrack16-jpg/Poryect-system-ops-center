@@ -186,6 +186,8 @@
   .boardlink-row{display:flex;gap:4px;align-items:center;}
   .boardlink-row input{flex:1;}
   .mini-del{background:var(--red-bg);border:1px solid var(--red);color:var(--red);border-radius:6px;padding:4px 7px;font-size:.68rem;flex-shrink:0;}
+  .mini-open{background:var(--blue-bg);border:1px solid var(--blue);color:#93C5FD;border-radius:6px;padding:4px 7px;font-size:.75rem;flex-shrink:0;line-height:1;}
+  .mini-open:hover{background:var(--blue);color:#fff;}
   .add-link-btn{padding:5px 10px;font-size:.7rem;align-self:flex-start;}
   .colhead-pct{font-size:.65rem;color:var(--text2);margin-top:3px;text-align:right;}
 
@@ -1188,6 +1190,7 @@ function spyLinksEditor(l){
   var arr = l.urls && l.urls.length ? l.urls : [''];
   var items = arr.map(function(u, idx){
     return '<div class="boardlink-row"><input type="text" placeholder="Link '+(idx+1)+'" value="'+esc(u)+'" data-slid="'+l.id+'" data-field="urls.'+idx+'">' +
+      (u ? '<button class="mini-open" data-action="openLink" data-val="'+esc(u)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
       (arr.length>1 ? '<button class="mini-del" data-action="delSpyUrl" data-slid="'+l.id+'" data-idx="'+idx+'">✕</button>' : '') +
     '</div>';
   }).join('');
@@ -1224,6 +1227,7 @@ function multiLinksEditor(p, arrField){
   if(arr.length === 0) arr = [''];
   var items = arr.map(function(url, idx){
     return '<div class="boardlink-row"><input type="text" placeholder="Link '+(idx+1)+'" value="'+esc(url)+'" data-pid="'+p.id+'" data-field="'+arrField+'.'+idx+'">' +
+      (url ? '<button class="mini-open" data-action="openLink" data-val="'+esc(url)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
       (arr.length>1 ? '<button class="mini-del" data-action="delLinkArr" data-pid="'+p.id+'" data-arr="'+arrField+'" data-idx="'+idx+'">✕</button>' : '') +
     '</div>';
   }).join('');
@@ -1816,6 +1820,7 @@ function taskLinksBlock(t, field, label, placeholder){
   if(!arr || arr.length===0) arr = [''];
   var rows = arr.map(function(u, idx){
     return '<div class="boardlink-row"><input type="text" placeholder="'+esc(placeholder)+' '+(idx+1)+'" value="'+esc(u)+'" data-wt="'+t.id+'" data-field="'+field+'.'+idx+'">' +
+      (u ? '<button class="mini-open" data-action="openLink" data-val="'+esc(u)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
       (arr.length>1 ? '<button class="mini-del" data-action="delTaskArr" data-wtid="'+t.id+'" data-arr="'+field+'" data-idx="'+idx+'">✕</button>' : '') +
     '</div>';
   }).join('');
@@ -1861,6 +1866,7 @@ function renderTutorialCourse(){
 
     var materialesHtml = content.materiales.map(function(url, midx){
       return '<div class="boardlink-row"><input type="text" placeholder="Link de Drive del material" value="'+esc(url)+'" data-tut="'+t.id+'" data-field="materiales.'+midx+'">' +
+        (url ? '<button class="mini-open" data-action="openLink" data-val="'+esc(url)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
         (content.materiales.length>1 ? '<button class="mini-del" data-action="delTutMaterial" data-tut="'+t.id+'" data-idx="'+midx+'">✕</button>' : '') +
       '</div>';
     }).join('');
