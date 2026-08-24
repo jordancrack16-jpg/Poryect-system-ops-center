@@ -227,6 +227,8 @@
   .html-preview{margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;}
   .html-preview iframe{width:100%;height:220px;border:none;display:block;}
   .sendy-account{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border);}
+  .spy-entry{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border);}
+  .spy-entry .spy-entry-head{font-size:.68rem;color:var(--text2);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -660,7 +662,7 @@ function emptyProduct(name, country, niche, responsible){
 
 function seedWeekTasks(){
   return [
-    { id:uid('wt'), day:0, taskTypeId:'investigacion', assignee:'Jordan', producto:'', tiempoEstimado:'45 min', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
+    { id:uid('wt'), day:0, taskTypeId:'investigacion', assignee:'Jordan', producto:'', tiempoEstimado:'45 min', fecha:'2026-08-24', status:'pendiente', links:[''], spyIds:[], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
     { id:uid('wt'), day:0, taskTypeId:'edicion_anuncios', assignee:'Cami', producto:'', tiempoEstimado:'1 h', fecha:'2026-08-24', status:'pendiente', links:[''], linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', r1:'pendiente', r2:'pendiente', r3:'pendiente' },
     { id:uid('wt'), day:0, taskTypeId:'revision_chats', assignee:'Meli', producto:'', tiempoEstimado:'20 min', fecha:'2026-08-24', status:'pendiente', links:[''], sendyAccounts:[{correo:'',contrasena:''}], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
     { id:uid('wt'), day:0, taskTypeId:'ideas_upsell', assignee:'Meli', producto:'', tiempoEstimado:'30 min', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
@@ -870,12 +872,29 @@ function migrateDB(d){
       if(t.taskTypeId === 'revision_chats'){
         if(!t.sendyAccounts || t.sendyAccounts.length===0) t.sendyAccounts = [{correo:'',contrasena:''}];
       }
+      if(t.taskTypeId === 'investigacion'){
+        if(!t.spyIds) t.spyIds = [];
+      }
     });
   }
   if(!d.tutorialContent){ d.tutorialContent = {}; }
+  if(!d.spyLinks){ d.spyLinks = []; }
+  d.weekTasks.forEach(function(t){
+    if(t.taskTypeId === 'investigacion' && t.spyIds.length === 0 && t.links && t.links.some(function(u){ return u && u.trim(); })){
+      t.links.filter(function(u){ return u && u.trim(); }).forEach(function(u){
+        var newSpy = { id: uid('sl'), urls:[u], name:'', niche:'', responsible: t.assignee||'Jordan', date: t.fecha||today(), notes:'', status:'por_revisar', potencial:'medio', keywordActivador:'', decision:'revisar', productId:null };
+        d.spyLinks.push(newSpy);
+        t.spyIds.push(newSpy.id);
+      });
+    }
+    if(t.taskTypeId === 'investigacion'){
+      t.spyIds = t.spyIds.filter(function(id){ return d.spyLinks.some(function(l){ return l.id === id; }); });
+    }
+  });
   (d.spyLinks||[]).forEach(function(l){
     if(l.status === 'interesante') l.status = 'aprobado';
     if(l.status === 'convertido') l.status = 'aprobado';
+    if(l.status === 'descartado') l.status = 'por_revisar';
     if(l.potencial === undefined) l.potencial = 'medio';
     if(l.keywordActivador === undefined) l.keywordActivador = '';
     if(l.decision === undefined) l.decision = 'revisar';
@@ -1199,16 +1218,14 @@ function renderSpy(){
       '<td style="min-width:190px;">'+spyLinksEditor(l)+'</td>' +
       '<td><input type="text" value="'+esc(l.name)+'" data-slid="'+l.id+'" data-field="name"></td>' +
       '<td><input type="text" value="'+esc(l.niche)+'" data-slid="'+l.id+'" data-field="niche"></td>' +
-      '<td><select data-slid="'+l.id+'" data-field="responsible">'+selOpts(['Jordan','Cami','Meli','Jesús'], l.responsible)+'</select></td>' +
       '<td><input type="date" value="'+esc(l.date)+'" data-slid="'+l.id+'" data-field="date"></td>' +
-      '<td><input type="text" value="'+esc(l.notes)+'" data-slid="'+l.id+'" data-field="notes"></td>' +
       '<td>'+spyStatusSelect(l)+'</td>' +
       '<td><button class="btn-danger-out" data-action="delSpy" data-slid="'+l.id+'">✕</button></td>' +
     '</tr>';
   }).join('');
   document.getElementById('spyTable').innerHTML =
-    '<thead><tr><th>#</th><th>Link</th><th>Nombre</th><th>Nicho</th><th>Responsable</th><th>Fecha</th><th>Lo interesante</th><th>Estado</th><th></th></tr></thead>' +
-    '<tbody>' + (rows || '<tr><td colspan="9" class="empty-msg">Sin links todavía</td></tr>') + '</tbody>';
+    '<thead><tr><th>#</th><th>Link</th><th>Nombre</th><th>Nicho</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>' +
+    '<tbody>' + (rows || '<tr><td colspan="7" class="empty-msg">Sin links todavía</td></tr>') + '</tbody>';
 
   var aprobados = db.spyLinks.filter(function(l){ return l.status === 'aprobado'; });
   var revRows = aprobados.map(function(l){
@@ -1240,7 +1257,7 @@ function spyLinksEditor(l){
   return '<div class="boardlinks-wrap">'+items+'<button class="btn-ghost add-link-btn" data-action="addSpyUrl" data-slid="'+l.id+'">+ link</button></div>';
 }
 function spyStatusSelect(l){
-  return '<select data-slid="'+l.id+'" data-field="status">'+selOpts(['por_revisar','descartado','aprobado'], l.status, {por_revisar:'Por revisar', descartado:'Descartado', aprobado:'Aprobado'})+'</select>';
+  return '<select data-slid="'+l.id+'" data-field="status">'+selOpts(['por_revisar','aprobado'], l.status, {por_revisar:'No aprobado', aprobado:'Aprobado'})+'</select>';
 }
 function decisionSpySelect(l){
   return '<select data-action="decideProduct" data-slid="'+l.id+'">'+selOpts(['revisar','aprobado','descartado'], l.decision||'revisar', {revisar:'Revisar',aprobado:'APROBADO',descartado:'DESCARTADO'})+'</select>';
@@ -1833,6 +1850,9 @@ function taskCardHTML(t){
     var linksBlock1 = taskLinksBlock(t, 'links', 'Links', 'Link');
     bodyHTML = fechaBlock + sendyAccountsBlock(t) + statusBlock + linksBlock1 + roundsBlock;
 
+  } else if(t.taskTypeId === 'investigacion'){
+    bodyHTML = fechaBlock + spyEntriesBlock(t) + statusBlock;
+
   } else if(t.taskTypeId === 'edicion_anuncios'){
     var productoSelectBlock = productoSelectBlockFor(t);
     var linksOferta = taskLinksBlock(t, 'links', 'Links de la oferta', 'Link de la oferta');
@@ -1951,6 +1971,22 @@ function compraDigitalFieldsBlock(p){
     cdText(p, 'cuentaSendy', 'Cuenta de Sendy', 'Ej: equipo@dominio.com') +
     cdText(p, 'correoSendy', 'Correo de Sendy', 'Ej: equipo@dominio.com') +
     cdTextarea(p, 'textoBienvenida', 'Texto de bienvenida', 'Escribe aquí el texto de bienvenida / agradecimiento');
+}
+function spyEntriesBlock(t){
+  var ids = t.spyIds || [];
+  var entries = ids.map(function(id){ return db.spyLinks.find(function(l){ return l.id===id; }); }).filter(Boolean);
+  var rows = entries.map(function(l, idx){
+    return '<div class="spy-entry">' +
+      '<div class="spy-entry-head"><span>Investigación '+(idx+1)+'</span><button class="mini-del" data-action="delTaskSpy" data-wtid="'+t.id+'" data-slid="'+l.id+'">✕</button></div>' +
+      '<label>Link</label>' + spyLinksEditor(l) +
+      '<label>Nombre</label><input type="text" placeholder="Nombre del producto" value="'+esc(l.name)+'" data-slid="'+l.id+'" data-field="name">' +
+      '<label>Nicho</label><input type="text" placeholder="Nicho" value="'+esc(l.niche)+'" data-slid="'+l.id+'" data-field="niche">' +
+      '<label>Fecha</label><input type="date" value="'+esc(l.date)+'" data-slid="'+l.id+'" data-field="date">' +
+      '<label>Estado</label>' + spyStatusSelect(l) +
+    '</div>';
+  }).join('');
+  return '<label>Links de espionaje</label>' + (rows || '<div style="font-size:.75rem;color:var(--text2);margin-bottom:8px;">Sin links de investigación todavía</div>') +
+    '<button class="btn-ghost" data-action="addTaskSpy" data-wtid="'+t.id+'" style="width:100%;margin-top:2px;">+ Agregar link de investigación</button>';
 }
 function sendyAccountsBlock(t){
   var accounts = t.sendyAccounts && t.sendyAccounts.length ? t.sendyAccounts : [{correo:'',contrasena:''}];
@@ -2207,6 +2243,7 @@ document.addEventListener('click', function(e){
     };
     if(newTaskType === 'edicion_anuncios'){ newTask.linksArchivos=['']; newTask.textoAnuncio=''; newTask.fraseActivadora=''; }
     if(newTaskType === 'revision_chats'){ newTask.sendyAccounts=[{correo:'',contrasena:''}]; }
+    if(newTaskType === 'investigacion'){ newTask.spyIds=[]; }
     db.weekTasks.push(newTask);
     log('Tarea asignada: '+taskTypeById(newTask.taskTypeId).label, newTask.assignee);
     saveDB();
@@ -2251,6 +2288,22 @@ document.addEventListener('click', function(e){
     taskS2.sendyAccounts.splice(parseInt(el.getAttribute('data-idx'),10),1);
     if(taskS2.sendyAccounts.length===0) taskS2.sendyAccounts.push({correo:'',contrasena:''});
     saveDB(); renderWeekBoard();
+  }
+  if(action === 'addTaskSpy'){
+    var taskSpy = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
+    if(!taskSpy.spyIds) taskSpy.spyIds = [];
+    if(db.spyLinks.length >= 40){ toast('Ya llegaste al máximo de 40 links'); return; }
+    var newSpyEntry = { id: uid('sl'), urls:[''], name:'', niche:'', responsible: taskSpy.assignee||'Jordan', date: taskSpy.fecha||today(), notes:'', status:'por_revisar', potencial:'medio', keywordActivador:'', decision:'revisar', productId:null };
+    db.spyLinks.push(newSpyEntry);
+    taskSpy.spyIds.push(newSpyEntry.id);
+    saveDB(); renderApp();
+  }
+  if(action === 'delTaskSpy'){
+    var taskSpyD = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
+    var slidD = el.getAttribute('data-slid');
+    taskSpyD.spyIds = (taskSpyD.spyIds||[]).filter(function(id){ return id !== slidD; });
+    db.spyLinks = db.spyLinks.filter(function(l){ return l.id !== slidD; });
+    saveDB(); renderApp();
   }
 
   if(action === 'addHtmlBlock'){
