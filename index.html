@@ -208,6 +208,8 @@
   .task-card input[type=date]{background:var(--blue-bg);border:1px solid var(--blue);color:var(--text);}
   .task-card select{background:var(--purple-bg);border:1px solid var(--purple);color:var(--text);}
   .task-card .boardlinks-wrap input[type=text]{background:var(--green-bg);border:1px solid var(--green);color:var(--text);}
+  .task-card .check-row{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--text);margin:10px 0;text-transform:none;letter-spacing:normal;}
+  .task-card .check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--purple);flex-shrink:0;}
   .task-card .tdel{width:100%;text-align:center;font-size:.75rem;padding:8px;margin-top:14px;}
   .round-row{display:flex;gap:6px;}
   .round-pill{flex:1;text-align:center;font-size:.72rem;font-weight:700;padding:8px 4px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text2);cursor:pointer;}
@@ -637,7 +639,7 @@ function emptyProduct(name, country, niche, responsible){
     originalLink:'', pageLink:'', driveLink:'', docsLink:'', notes:'', boardLinks: [''], refLinks: [''],
     phase: 'preparacion', createdAt: today(),
     ads: { responsible:'Cami', status:'pendiente', textoStatus:'pendiente', count:0, driveLink:'', copyLink:'', fechaInicio:'', fechaFinal:'', textoPrincipal:'', hook:'', cta:'', textoResponsable:'Meli', textoDoc:'', activo:false, bm:'', cuentaPublicitaria:'', sendyCorreo:'', sendyContrasena:'', sendyWhatsapp:'', sendyId:'' },
-    campaignData: { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', id:'' },
+    campaignData: { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'' },
     funnel: { responsible:'Jesús', country: country || '', status:'pendiente', linkFlujo:'', linkDrive:'', observaciones:'', testeoEstado:'pendiente' },
     campaignEntries: [],
     idealCosts: { costoMensajeIdeal:'', costoCompraIdeal:'' },
@@ -890,14 +892,21 @@ function migrateDB(d){
     if(p.ads && p.ads.bm === undefined){ p.ads.bm = ''; }
     if(p.ads && p.ads.cuentaPublicitaria === undefined){ p.ads.cuentaPublicitaria = ''; }
     if(p.ads && p.ads.sendyCorreo === undefined){ p.ads.sendyCorreo = ''; p.ads.sendyContrasena = ''; p.ads.sendyWhatsapp = ''; p.ads.sendyId = ''; }
-    if(!p.campaignData){ p.campaignData = { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', id:'' }; }
+    if(!p.campaignData){ p.campaignData = { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'' }; }
     if(!p.campaignData.linksArchivos || p.campaignData.linksArchivos.length===0){ p.campaignData.linksArchivos = ['']; }
     if(p.campaignData.textoAnuncio === undefined) p.campaignData.textoAnuncio = '';
     if(p.campaignData.fraseActivadora === undefined) p.campaignData.fraseActivadora = '';
     if(p.campaignData.bm === undefined) p.campaignData.bm = '';
     if(p.campaignData.cuentaPublicitaria === undefined) p.campaignData.cuentaPublicitaria = '';
     if(p.campaignData.cuentaSendy === undefined) p.campaignData.cuentaSendy = '';
+    if(p.campaignData.correoSendy === undefined) p.campaignData.correoSendy = '';
     if(p.campaignData.id === undefined) p.campaignData.id = '';
+    if(p.campaignData.flujoLink === undefined) p.campaignData.flujoLink = '';
+    if(p.campaignData.nombreFlujo === undefined) p.campaignData.nombreFlujo = '';
+    if(p.campaignData.marcaInteresado === undefined) p.campaignData.marcaInteresado = false;
+    if(p.campaignData.marcaCompra === undefined) p.campaignData.marcaCompra = false;
+    if(p.campaignData.linkProductoDigital === undefined) p.campaignData.linkProductoDigital = '';
+    if(p.campaignData.textoBienvenida === undefined) p.campaignData.textoBienvenida = '';
     if(p.funnel && p.funnel.testeoEstado === undefined){ p.funnel.testeoEstado = 'pendiente'; }
     if(p.optimizacionActiva === undefined && p.campaignLaunchStatus === undefined){ p.campaignLaunchStatus = 'pendiente'; }
     if(p.activadorFlujos === undefined){ p.activadorFlujos = ''; }
@@ -943,6 +952,18 @@ function migrateDB(d){
         }
         if(!linkedProd.campaignData.textoAnuncio && t.textoAnuncio){ linkedProd.campaignData.textoAnuncio = t.textoAnuncio; }
         if(!linkedProd.campaignData.fraseActivadora && t.fraseActivadora){ linkedProd.campaignData.fraseActivadora = t.fraseActivadora; }
+      }
+    }
+    if(t.taskTypeId === 'edicion_flujo' && t.producto){
+      var flujoProd = (d.products||[]).find(function(p){ return p.id === t.producto; });
+      if(flujoProd && flujoProd.campaignData && !flujoProd.campaignData.flujoLink && t.links && t.links[0]){
+        flujoProd.campaignData.flujoLink = t.links[0];
+      }
+    }
+    if(t.taskTypeId === 'compra_digital' && t.producto){
+      var compraProd = (d.products||[]).find(function(p){ return p.id === t.producto; });
+      if(compraProd && compraProd.campaignData && !compraProd.campaignData.linkProductoDigital && t.links && t.links[0]){
+        compraProd.campaignData.linkProductoDigital = t.links[0];
       }
     }
   });
@@ -1837,6 +1858,20 @@ function taskCardHTML(t){
     }
     bodyHTML = productoSelectBlockC + fechaBlock + campanaBody + statusBlock;
 
+  } else if(t.taskTypeId === 'edicion_flujo'){
+    var productoSelectBlockF = productoSelectBlockFor(t);
+    var prodF = t.producto ? findProduct(t.producto) : null;
+    var flujoBody = prodF ? flujoPrincipalFieldsBlock(prodF) :
+      '<div style="font-size:.75rem;color:var(--text2);margin-top:8px;">Elige un producto arriba para cargar los datos del flujo de Sendy.</div>';
+    bodyHTML = productoSelectBlockF + fechaBlock + flujoBody + statusBlock;
+
+  } else if(t.taskTypeId === 'compra_digital'){
+    var productoSelectBlockD = productoSelectBlockFor(t);
+    var prodD = t.producto ? findProduct(t.producto) : null;
+    var compraBody = prodD ? compraDigitalFieldsBlock(prodD) :
+      '<div style="font-size:.75rem;color:var(--text2);margin-top:8px;">Elige un producto arriba para cargar el link y los datos del flujo.</div>';
+    bodyHTML = productoSelectBlockD + fechaBlock + compraBody + statusBlock;
+
   } else {
     var linksBlockDefault = taskLinksBlock(t, 'links', 'Links', type.linkLabel||'Link');
     bodyHTML = fechaBlock + statusBlock + linksBlockDefault + roundsBlock;
@@ -1883,6 +1918,39 @@ function campaignSharedFieldsBlock(p){
   return '<label>Links de los archivos listos para subir</label>' + multiLinksEditor(p, 'campaignData.linksArchivos') +
     '<label>Texto del anuncio</label><textarea data-pid="'+p.id+'" data-field="campaignData.textoAnuncio" placeholder="Escribe aquí el texto del anuncio">'+esc(p.campaignData.textoAnuncio)+'</textarea>' +
     '<label>Frase activadora / palabra clave en Sendy Pro</label><input type="text" placeholder="Ej: Escribe QUIERO para recibir tu regalo" value="'+esc(p.campaignData.fraseActivadora)+'" data-pid="'+p.id+'" data-field="campaignData.fraseActivadora">';
+}
+function cdText(p, key, label, placeholder){
+  return '<label>'+esc(label)+'</label><input type="text" placeholder="'+esc(placeholder||'')+'" value="'+esc(p.campaignData[key])+'" data-pid="'+p.id+'" data-field="campaignData.'+key+'">';
+}
+function cdTextarea(p, key, label, placeholder){
+  return '<label>'+esc(label)+'</label><textarea placeholder="'+esc(placeholder||'')+'" data-pid="'+p.id+'" data-field="campaignData.'+key+'">'+esc(p.campaignData[key])+'</textarea>';
+}
+function cdLink(p, key, label, placeholder){
+  var v = p.campaignData[key];
+  return '<label>'+esc(label)+'</label><div class="boardlink-row"><input type="text" placeholder="'+esc(placeholder||'')+'" value="'+esc(v)+'" data-pid="'+p.id+'" data-field="campaignData.'+key+'">' +
+    (v ? '<button class="mini-open" data-action="openLink" data-val="'+esc(v)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
+  '</div>';
+}
+function cdCheck(p, key, label){
+  return '<label class="check-row"><input type="checkbox" '+(p.campaignData[key]?'checked':'')+' data-pid="'+p.id+'" data-field="campaignData.'+key+'"> '+esc(label)+'</label>';
+}
+function flujoPrincipalFieldsBlock(p){
+  return cdText(p, 'fraseActivadora', 'Frase activadora / palabra clave en Sendy Pro', 'Ej: Escribe QUIERO para recibir tu regalo') +
+    cdText(p, 'cuentaSendy', 'Cuenta de Sendy', 'Ej: equipo@dominio.com') +
+    cdText(p, 'correoSendy', 'Correo de Sendy', 'Ej: equipo@dominio.com') +
+    cdText(p, 'id', 'ID', 'Ej: SDY-1029') +
+    cdLink(p, 'flujoLink', 'Flujo encendido (link de Drive)', 'Link de Drive del flujo') +
+    cdText(p, 'nombreFlujo', 'Nombre del flujo', 'Ej: Flujo regalo devocional') +
+    cdCheck(p, 'marcaInteresado', 'Interesado') +
+    cdCheck(p, 'marcaCompra', 'Compra');
+}
+function compraDigitalFieldsBlock(p){
+  return cdLink(p, 'linkProductoDigital', 'Link del producto digital, listo para descargar', 'Link del producto digital') +
+    cdText(p, 'nombreFlujo', 'Nombre del flujo', 'Ej: Flujo regalo devocional') +
+    cdText(p, 'id', 'ID', 'Ej: SDY-1029') +
+    cdText(p, 'cuentaSendy', 'Cuenta de Sendy', 'Ej: equipo@dominio.com') +
+    cdText(p, 'correoSendy', 'Correo de Sendy', 'Ej: equipo@dominio.com') +
+    cdTextarea(p, 'textoBienvenida', 'Texto de bienvenida', 'Escribe aquí el texto de bienvenida / agradecimiento');
 }
 function sendyAccountsBlock(t){
   var accounts = t.sendyAccounts && t.sendyAccounts.length ? t.sendyAccounts : [{correo:'',contrasena:''}];
