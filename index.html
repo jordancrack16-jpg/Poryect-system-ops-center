@@ -1501,11 +1501,15 @@ function taskCardHTML(t){
     bodyHTML = fechaBlock + sendyAccountsBlock(t) + statusBlock + linksBlock1 + roundsBlock;
 
   } else if(t.taskTypeId === 'edicion_anuncios'){
+    var productoSelectBlock = '<label>Nombre del producto</label><select data-wt="'+t.id+'" data-field="producto">' +
+      '<option value="">— Elegir producto —</option>' +
+      db.products.map(function(p){ return '<option value="'+p.id+'"'+(t.producto===p.id?' selected':'')+'>'+esc(p.name)+'</option>'; }).join('') +
+    '</select>';
     var linksOferta = taskLinksBlock(t, 'links', 'Links de la oferta', 'Link de la oferta');
     var linksArchivos = taskLinksBlock(t, 'linksArchivos', 'Links de los archivos listos para subir', 'Link del archivo');
     var textoAnuncioBlock = '<label>Texto del anuncio</label><textarea data-wt="'+t.id+'" data-field="textoAnuncio" placeholder="Escribe aquí el texto del anuncio">'+esc(t.textoAnuncio)+'</textarea>';
     var fraseActivadoraBlock = '<label>Frase activadora en Sendy Pro</label><input type="text" placeholder="Ej: Escribe QUIERO para recibir tu regalo" value="'+esc(t.fraseActivadora)+'" data-wt="'+t.id+'" data-field="fraseActivadora">';
-    bodyHTML = fechaBlock + linksOferta + linksArchivos + textoAnuncioBlock + fraseActivadoraBlock + statusBlock;
+    bodyHTML = productoSelectBlock + fechaBlock + linksOferta + linksArchivos + textoAnuncioBlock + fraseActivadoraBlock + statusBlock;
 
   } else {
     var linksBlockDefault = taskLinksBlock(t, 'links', 'Links', type.linkLabel||'Link');
