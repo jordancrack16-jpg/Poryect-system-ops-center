@@ -28,6 +28,15 @@
   #shell{display:flex;min-height:100vh;}
   aside{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);padding:16px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;}
   .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:.95rem;padding:4px 6px 20px;}
+
+  .auth-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .auth-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px 28px;max-width:360px;width:100%;}
+  .auth-box label{display:block;font-size:.75rem;color:var(--text2);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.03em;}
+  .auth-box input{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.85rem;color:var(--text);}
+  .auth-error{background:var(--red-bg);border:1px solid var(--red);color:#FCA5A5;border-radius:8px;padding:10px 12px;font-size:.8rem;margin-bottom:8px;}
+  .profile-display{display:flex;flex-direction:column;line-height:1.25;font-size:.78rem;}
+  .profile-display .pname{font-weight:700;color:var(--text);}
+  .profile-display .prole{color:var(--text2);font-size:.7rem;}
   .logo .ico{width:28px;height:28px;background:var(--purple);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;}
   .navgroup{margin-bottom:16px;}
   .navgroup h4{font-size:.63rem;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;padding:6px 10px;font-weight:700;}
@@ -212,10 +221,30 @@
   .html-preview iframe{width:100%;height:220px;border:none;display:block;}
   .sendy-account{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border);}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<div id="shell">
+<div id="loadingScreen" class="auth-screen">
+  <div class="auth-box" style="text-align:center;">
+    <div class="logo" style="justify-content:center;margin-bottom:10px;"><div class="ico">🧩</div>OPS CENTER</div>
+    <p style="color:var(--text2);font-size:.88rem;">Cargando OPS CENTER...</p>
+  </div>
+</div>
+
+<div id="loginScreen" class="auth-screen" style="display:none;">
+  <div class="auth-box">
+    <div class="logo" style="justify-content:center;margin-bottom:18px;"><div class="ico">🧩</div>OPS CENTER</div>
+    <div id="loginError" class="auth-error" style="display:none;"></div>
+    <label>Correo</label>
+    <input type="email" id="loginEmail" placeholder="tucorreo@dominio.com" autocomplete="username">
+    <label>Contraseña</label>
+    <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn-primary" id="loginBtn" style="width:100%;margin-top:16px;padding:12px;">Iniciar sesión</button>
+  </div>
+</div>
+
+<div id="shell" style="display:none;">
   <aside>
     <div class="logo"><div class="ico">🧩</div>OPS CENTER</div>
 
@@ -257,13 +286,9 @@
       <div class="searchbox">🔍 <input type="text" id="globalSearch" placeholder="Buscar en todo..."></div>
       <div class="top-right">
         <div class="cloud-status"><span class="dot"></span> En la nube</div>
-        <select class="user-select" id="activeUser">
-          <option>Jordan · Admin</option>
-          <option>Cami · Creativos</option>
-          <option>Meli · Creativos</option>
-          <option>Jesús · Flujos</option>
-        </select>
+        <div class="profile-display" id="profileDisplay"><span class="pname">—</span><span class="prole">—</span></div>
         <button class="icon-btn">🔔<span class="nbadge" id="notifBadge">0</span></button>
+        <button class="btn-ghost" id="signOutBtn">Cerrar sesión</button>
         <button class="btn-primary" data-action="openNewProduct">+ Crear</button>
       </div>
     </header>
@@ -439,6 +464,120 @@
 
 <script>
 (function(){
+
+/* ============================================================
+   SUPABASE AUTH (nuevo — no toca localStorage ni db existente)
+   ============================================================ */
+var SUPABASE_URL = 'https://zjgznvmrwpgnrxrazifz.supabase.co';
+var SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_VAEy9BJIaTiS2y0lsJbutA_jx9B9LlC';
+var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+var currentProfile = null; // { id, full_name, role, email }
+var ROLE_LABELS = { admin:'Administrador', creativos:'Creativos', flujos:'Flujos', operador:'Operador' };
+
+function showAuthScreen(id){
+  ['loadingScreen','loginScreen'].forEach(function(sid){
+    document.getElementById(sid).style.display = (sid===id) ? 'flex' : 'none';
+  });
+  document.getElementById('shell').style.display = 'none';
+}
+function showApp(){
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('shell').style.display = 'flex';
+}
+function setLoginError(msg){
+  var el = document.getElementById('loginError');
+  if(!msg){ el.style.display = 'none'; el.textContent = ''; return; }
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function renderProfileDisplay(){
+  if(!currentProfile) return;
+  var el = document.getElementById('profileDisplay');
+  var roleLabel = ROLE_LABELS[currentProfile.role] || currentProfile.role || '—';
+  el.innerHTML = '<span class="pname">'+currentProfile.full_name+'</span><span class="prole">'+roleLabel+'</span>';
+}
+
+async function loadProfileAndEnter(user){
+  try{
+    var res = await supabaseClient.from('profiles').select('id, full_name, role').eq('id', user.id).single();
+    if(res.error || !res.data){
+      setLoginError('Tu usuario existe, pero no tiene un perfil configurado en OPS CENTER.');
+      await supabaseClient.auth.signOut();
+      showAuthScreen('loginScreen');
+      return;
+    }
+    currentProfile = { id: res.data.id, full_name: res.data.full_name, role: res.data.role, email: user.email };
+    renderProfileDisplay();
+    showApp();
+    renderApp(); // arranca la app existente, con los datos actuales de localStorage intactos
+  }catch(err){
+    setLoginError('No se pudo conectar con Supabase. Intenta de nuevo.');
+    showAuthScreen('loginScreen');
+  }
+}
+
+async function initAuth(){
+  showAuthScreen('loadingScreen');
+  try{
+    var sessionRes = await supabaseClient.auth.getSession();
+    var session = sessionRes.data ? sessionRes.data.session : null;
+    if(session && session.user){
+      await loadProfileAndEnter(session.user);
+    } else {
+      showAuthScreen('loginScreen');
+    }
+  }catch(err){
+    showAuthScreen('loginScreen');
+  }
+}
+
+async function handleLoginSubmit(){
+  setLoginError(null);
+  var email = document.getElementById('loginEmail').value.trim();
+  var password = document.getElementById('loginPassword').value;
+  if(!email || !password){ setLoginError('Completa tu correo y contraseña.'); return; }
+
+  var btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Ingresando...';
+
+  try{
+    var res = await supabaseClient.auth.signInWithPassword({ email:email, password:password });
+    if(res.error){
+      var msg = 'No se pudo iniciar sesión. Intenta de nuevo.';
+      var em = (res.error.message||'').toLowerCase();
+      if(em.indexOf('invalid') > -1 || em.indexOf('credentials') > -1){ msg = 'Correo o contraseña incorrectos.'; }
+      else if(em.indexOf('network') > -1 || em.indexOf('fetch') > -1){ msg = 'Supabase no responde. Revisa tu conexión e intenta de nuevo.'; }
+      setLoginError(msg);
+      btn.disabled = false; btn.textContent = 'Iniciar sesión';
+      return;
+    }
+    await loadProfileAndEnter(res.data.user);
+    btn.disabled = false; btn.textContent = 'Iniciar sesión';
+  }catch(err){
+    setLoginError('Supabase no responde. Intenta de nuevo.');
+    btn.disabled = false; btn.textContent = 'Iniciar sesión';
+  }
+}
+
+async function handleSignOut(){
+  try{ await supabaseClient.auth.signOut(); }catch(err){}
+  currentProfile = null;
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  setLoginError(null);
+  showAuthScreen('loginScreen');
+  // localStorage NO se toca — los datos siguen intactos para la próxima sesión
+}
+
+supabaseClient.auth.onAuthStateChange(function(event){
+  if(event === 'SIGNED_OUT'){
+    currentProfile = null;
+    showAuthScreen('loginScreen');
+  }
+});
 
 var STORAGE_KEY = 'ops_center_db_v1';
 
@@ -682,7 +821,7 @@ function resetDemo(){
   renderApp();
 }
 
-function currentUser(){ return document.getElementById('activeUser').value.split(' ·')[0]; }
+function currentUser(){ return currentProfile ? currentProfile.full_name : 'Usuario'; }
 
 function log(action, productName){
   db.history.unshift({ user: currentUser(), action: action + (productName ? ' — ' + productName : ''), date: nowLabel() });
@@ -1874,7 +2013,12 @@ document.addEventListener('change', function(e){
   }
 });
 
-renderApp();
+document.getElementById('loginBtn').addEventListener('click', handleLoginSubmit);
+document.getElementById('loginPassword').addEventListener('keydown', function(e){ if(e.key === 'Enter') handleLoginSubmit(); });
+document.getElementById('loginEmail').addEventListener('keydown', function(e){ if(e.key === 'Enter') handleLoginSubmit(); });
+document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
+
+initAuth();
 
 })();
 </script>
