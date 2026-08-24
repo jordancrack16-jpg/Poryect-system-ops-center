@@ -210,6 +210,7 @@
   .html-block textarea{width:100%;min-height:90px;font-family:'Courier New',monospace;font-size:.75rem;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);resize:vertical;}
   .html-preview{margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;}
   .html-preview iframe{width:100%;height:220px;border:none;display:block;}
+  .sendy-account{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border);}
 </style>
 </head>
 <body>
@@ -493,8 +494,8 @@ function emptyProduct(name, country, niche, responsible){
 function seedWeekTasks(){
   return [
     { id:uid('wt'), day:0, taskTypeId:'investigacion', assignee:'Jordan', producto:'', tiempoEstimado:'45 min', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
-    { id:uid('wt'), day:0, taskTypeId:'edicion_anuncios', assignee:'Cami', producto:'', tiempoEstimado:'1 h', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
-    { id:uid('wt'), day:0, taskTypeId:'revision_chats', assignee:'Meli', producto:'', tiempoEstimado:'20 min', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
+    { id:uid('wt'), day:0, taskTypeId:'edicion_anuncios', assignee:'Cami', producto:'', tiempoEstimado:'1 h', fecha:'2026-08-24', status:'pendiente', links:[''], linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', r1:'pendiente', r2:'pendiente', r3:'pendiente' },
+    { id:uid('wt'), day:0, taskTypeId:'revision_chats', assignee:'Meli', producto:'', tiempoEstimado:'20 min', fecha:'2026-08-24', status:'pendiente', links:[''], sendyAccounts:[{correo:'',contrasena:''}], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
     { id:uid('wt'), day:0, taskTypeId:'ideas_upsell', assignee:'Meli', producto:'', tiempoEstimado:'30 min', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
     { id:uid('wt'), day:1, taskTypeId:'edicion_flujo', assignee:'Jesús', producto:'', tiempoEstimado:'1 h', fecha:'2026-08-25', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
     { id:uid('wt'), day:1, taskTypeId:'revision_campanas', assignee:'Jordan', producto:'', tiempoEstimado:'20 min', fecha:'2026-08-25', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
@@ -552,13 +553,13 @@ function seedProducts(){
 var TASK_CATALOG = [
   { id:'investigacion', label:'Investigación / Espionaje', fieldType:'link', linkLabel:'Link de documento de investigación' },
   { id:'campanas_testeo', label:'Lanzar campañas de testeo', fieldType:'status' },
-  { id:'edicion_anuncios', label:'Edición de anuncios (subir a Drive)', fieldType:'link', linkLabel:'Link de Drive de anuncios' },
+  { id:'edicion_anuncios', label:'Edición de anuncios (subir a Drive)', fieldType:'link', linkLabel:'Link de la oferta' },
   { id:'edicion_flujo', label:'Edición de flujo principal (Sendy)', fieldType:'status' },
   { id:'ideas_upsell', label:'Ideas de Upsell', fieldType:'link', linkLabel:'Link de documento de ideas' },
   { id:'investigacion_upsell', label:'Investigación de posibles Upsells', fieldType:'link', linkLabel:'Link de documento' },
   { id:'campanas_escala', label:'Lanzamiento de campañas de escala', fieldType:'status' },
   { id:'compra_digital', label:'Compra de productos digitales', fieldType:'link', linkLabel:'Link del producto comprado' },
-  { id:'revision_chats', label:'Revisión de chats / flujos (x3 al día)', fieldType:'rounds3' },
+  { id:'revision_chats', label:'Chats / Flujos 3 por día', fieldType:'rounds3' },
   { id:'revision_campanas', label:'Revisión de campañas (x3 al día)', fieldType:'rounds3' }
 ];
 var DAY_LABELS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
@@ -604,6 +605,14 @@ function migrateDB(d){
       if(!t.links){ t.links = t.link ? [t.link] : ['']; delete t.link; }
       if(t.links.length===0) t.links.push('');
       if(t.fecha === undefined) t.fecha = '';
+      if(t.taskTypeId === 'edicion_anuncios'){
+        if(!t.linksArchivos) t.linksArchivos = [''];
+        if(t.textoAnuncio === undefined) t.textoAnuncio = '';
+        if(t.fraseActivadora === undefined) t.fraseActivadora = '';
+      }
+      if(t.taskTypeId === 'revision_chats'){
+        if(!t.sendyAccounts || t.sendyAccounts.length===0) t.sendyAccounts = [{correo:'',contrasena:''}];
+      }
     });
   }
   if(!d.tutorialContent){ d.tutorialContent = {}; }
@@ -1470,24 +1479,13 @@ function taskCardHTML(t){
   var type = taskTypeById(t.taskTypeId);
   if(!type) return '';
 
-  var linksBlock =
-    '<label>Links</label>' +
-    '<div class="boardlinks-wrap">' +
-      t.links.map(function(u, idx){
-        return '<div class="boardlink-row"><input type="text" placeholder="'+esc(type.linkLabel||'Link')+' '+(idx+1)+'" value="'+esc(u)+'" data-wt="'+t.id+'" data-field="links.'+idx+'">' +
-          (t.links.length>1 ? '<button class="mini-del" data-action="delTaskLink" data-wtid="'+t.id+'" data-idx="'+idx+'">✕</button>' : '') +
-        '</div>';
-      }).join('') +
-      '<button class="btn-ghost add-link-btn" data-action="addTaskLink" data-wtid="'+t.id+'">+ link</button>' +
-    '</div>';
+  var fechaBlock =
+    '<label>Fecha</label>' +
+    '<input type="date" value="'+esc(t.fecha)+'" data-wt="'+t.id+'" data-field="fecha">';
 
   var statusBlock =
     '<label>Estado</label>' +
     '<select data-wt="'+t.id+'" data-field="status">'+selOpts(['pendiente','en_proceso','terminado'], t.status, {pendiente:'Pendiente',en_proceso:'En proceso',terminado:'Terminado'})+'</select>';
-
-  var fechaBlock =
-    '<label>Fecha</label>' +
-    '<input type="date" value="'+esc(t.fecha)+'" data-wt="'+t.id+'" data-field="fecha">';
 
   var roundsBlock = '';
   if(type.fieldType === 'rounds3'){
@@ -1496,17 +1494,54 @@ function taskCardHTML(t){
     '</div>';
   }
 
+  var bodyHTML;
+
+  if(t.taskTypeId === 'revision_chats'){
+    var linksBlock1 = taskLinksBlock(t, 'links', 'Links', 'Link');
+    bodyHTML = fechaBlock + sendyAccountsBlock(t) + statusBlock + linksBlock1 + roundsBlock;
+
+  } else if(t.taskTypeId === 'edicion_anuncios'){
+    var linksOferta = taskLinksBlock(t, 'links', 'Links de la oferta', 'Link de la oferta');
+    var linksArchivos = taskLinksBlock(t, 'linksArchivos', 'Links de los archivos listos para subir', 'Link del archivo');
+    var textoAnuncioBlock = '<label>Texto del anuncio</label><textarea data-wt="'+t.id+'" data-field="textoAnuncio" placeholder="Escribe aquí el texto del anuncio">'+esc(t.textoAnuncio)+'</textarea>';
+    var fraseActivadoraBlock = '<label>Frase activadora en Sendy Pro</label><input type="text" placeholder="Ej: Escribe QUIERO para recibir tu regalo" value="'+esc(t.fraseActivadora)+'" data-wt="'+t.id+'" data-field="fraseActivadora">';
+    bodyHTML = fechaBlock + linksOferta + linksArchivos + textoAnuncioBlock + fraseActivadoraBlock + statusBlock;
+
+  } else {
+    var linksBlockDefault = taskLinksBlock(t, 'links', 'Links', type.linkLabel||'Link');
+    bodyHTML = fechaBlock + statusBlock + linksBlockDefault + roundsBlock;
+  }
+
   var done = t.status === 'terminado';
   return '<div class="task-card'+(done?' done':'')+'">' +
     '<div class="ttype">'+esc(type.label)+(done?' <span class="tag green">✓ Terminado</span>':'')+'</div>' +
     '<div class="tmeta"><span class="avatar" style="margin:0;">'+t.assignee.slice(0,2).toUpperCase()+'</span><span>'+esc(t.assignee)+'</span><span>⏱ '+esc(t.tiempoEstimado||'—')+'</span></div>' +
     (t.producto ? '<div class="tprod">🔗 '+esc(productLabel(t.producto))+'</div>' : '') +
-    fechaBlock +
-    statusBlock +
-    linksBlock +
-    roundsBlock +
+    bodyHTML +
     '<button class="btn-danger-out tdel" data-action="delWeekTask" data-wtid="'+t.id+'">✕ Quitar tarea</button>' +
   '</div>';
+}
+function taskLinksBlock(t, field, label, placeholder){
+  var arr = getDeep(t, field);
+  if(!arr || arr.length===0) arr = [''];
+  var rows = arr.map(function(u, idx){
+    return '<div class="boardlink-row"><input type="text" placeholder="'+esc(placeholder)+' '+(idx+1)+'" value="'+esc(u)+'" data-wt="'+t.id+'" data-field="'+field+'.'+idx+'">' +
+      (arr.length>1 ? '<button class="mini-del" data-action="delTaskArr" data-wtid="'+t.id+'" data-arr="'+field+'" data-idx="'+idx+'">✕</button>' : '') +
+    '</div>';
+  }).join('');
+  return '<label>'+esc(label)+'</label><div class="boardlinks-wrap">'+rows+'<button class="btn-ghost add-link-btn" data-action="addTaskArr" data-wtid="'+t.id+'" data-arr="'+field+'">+ link</button></div>';
+}
+function sendyAccountsBlock(t){
+  var accounts = t.sendyAccounts && t.sendyAccounts.length ? t.sendyAccounts : [{correo:'',contrasena:''}];
+  var rows = accounts.map(function(acc, idx){
+    return '<div class="sendy-account">' +
+      (accounts.length>1 ? '<div style="font-size:.68rem;color:var(--text2);margin-bottom:4px;">Cuenta '+(idx+1)+'</div>' : '') +
+      '<label>Correo</label><input type="text" placeholder="Correo de Sendy Pro" value="'+esc(acc.correo)+'" data-wt="'+t.id+'" data-field="sendyAccounts.'+idx+'.correo">' +
+      '<label>Contraseña</label><input type="text" placeholder="Contraseña" value="'+esc(acc.contrasena)+'" data-wt="'+t.id+'" data-field="sendyAccounts.'+idx+'.contrasena">' +
+      (accounts.length>1 ? '<button class="btn-danger-out" style="width:100%;margin-top:6px;" data-action="delSendyAccount" data-wtid="'+t.id+'" data-idx="'+idx+'">✕ Quitar esta cuenta</button>' : '') +
+    '</div>';
+  }).join('');
+  return '<label>Usuario de Sendy Pro</label>' + rows + '<button class="btn-ghost" data-action="addSendyAccount" data-wtid="'+t.id+'" style="width:100%;margin-top:2px;">+ Agregar cuenta de Sendy Pro</button>';
 }
 function roundPill(t, key, label){
   var done = t[key] === 'terminado';
@@ -1737,16 +1772,19 @@ document.addEventListener('click', function(e){
   }
   if(action === 'closeAssignTask'){ assignTaskModal.classList.remove('show'); }
   if(action === 'saveAssignTask'){
+    var newTaskType = document.getElementById('at_type').value;
     var newTask = {
       id: uid('wt'),
       day: parseInt(document.getElementById('at_day').value,10),
-      taskTypeId: document.getElementById('at_type').value,
+      taskTypeId: newTaskType,
       assignee: document.getElementById('at_person').value,
       producto: document.getElementById('at_product').value,
       tiempoEstimado: document.getElementById('at_time').value,
       fecha: document.getElementById('at_fecha').value,
       status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente'
     };
+    if(newTaskType === 'edicion_anuncios'){ newTask.linksArchivos=['']; newTask.textoAnuncio=''; newTask.fraseActivadora=''; }
+    if(newTaskType === 'revision_chats'){ newTask.sendyAccounts=[{correo:'',contrasena:''}]; }
     db.weekTasks.push(newTask);
     log('Tarea asignada: '+taskTypeById(newTask.taskTypeId).label, newTask.assignee);
     saveDB();
@@ -1767,15 +1805,29 @@ document.addEventListener('click', function(e){
     task[round] = task[round] === 'terminado' ? 'pendiente' : 'terminado';
     saveDB(); renderWeekBoard();
   }
-  if(action === 'addTaskLink'){
+  if(action === 'addTaskArr'){
     var taskA = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
-    taskA.links.push('');
+    var arrA = getDeep(taskA, el.getAttribute('data-arr'));
+    arrA.push('');
     saveDB(); renderWeekBoard();
   }
-  if(action === 'delTaskLink'){
+  if(action === 'delTaskArr'){
     var taskD = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
-    taskD.links.splice(parseInt(el.getAttribute('data-idx'),10),1);
-    if(taskD.links.length===0) taskD.links.push('');
+    var arrD = getDeep(taskD, el.getAttribute('data-arr'));
+    arrD.splice(parseInt(el.getAttribute('data-idx'),10),1);
+    if(arrD.length===0) arrD.push('');
+    saveDB(); renderWeekBoard();
+  }
+  if(action === 'addSendyAccount'){
+    var taskS = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
+    if(!taskS.sendyAccounts) taskS.sendyAccounts = [];
+    taskS.sendyAccounts.push({correo:'',contrasena:''});
+    saveDB(); renderWeekBoard();
+  }
+  if(action === 'delSendyAccount'){
+    var taskS2 = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
+    taskS2.sendyAccounts.splice(parseInt(el.getAttribute('data-idx'),10),1);
+    if(taskS2.sendyAccounts.length===0) taskS2.sendyAccounts.push({correo:'',contrasena:''});
     saveDB(); renderWeekBoard();
   }
 
