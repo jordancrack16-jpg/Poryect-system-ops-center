@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPS CENTER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --bg:#080D17; --panel:#111827; --panel2:#161F30; --border:#263248;
+    --text:#F8FAFC; --text2:#94A3B8;
+    --purple:#8B5CF6; --purple-bg:#211A3E;
+    --green:#14B8A6; --green-bg:#0C2A28;
+    --blue:#3B82F6; --blue-bg:#0F1E33;
+    --red:#EF4444; --red-bg:#2A1418;
+    --yellow:#F59E0B; --yellow-bg:#2A2110;
+  }
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px;min-height:100vh;}
+  button,input,select,textarea{font:inherit;color:inherit;}
+  button{cursor:pointer;}
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
+
+  a.linkbtn{color:#93C5FD;text-decoration:none;font-size:.75rem;}
+  a.linkbtn:hover{text-decoration:underline;}
+
+  #shell{display:flex;min-height:100vh;}
+  aside{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);padding:16px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:.95rem;padding:4px 6px 20px;}
+  .logo .ico{width:28px;height:28px;background:var(--purple);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+  .navgroup{margin-bottom:16px;}
+  .navgroup h4{font-size:.63rem;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;padding:6px 10px;font-weight:700;}
+  .navitem{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:8px;font-size:.83rem;color:var(--text2);margin-bottom:2px;transition:background .15s;}
+  .navitem .l{display:flex;align-items:center;gap:9px;}
+  .navitem.active{background:var(--purple-bg);color:var(--text);}
+  .navitem:hover:not(.active){background:var(--panel2);color:var(--text);}
+
+  #main{flex:1;min-width:0;display:flex;flex-direction:column;}
+  header.topbar{height:58px;flex-shrink:0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;gap:16px;background:var(--bg);position:sticky;top:0;z-index:30;}
+  .searchbox{flex:1;max-width:420px;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:8px 12px;color:var(--text2);font-size:.82rem;}
+  .searchbox input{background:none;border:none;outline:none;flex:1;color:var(--text);}
+  .top-right{display:flex;align-items:center;gap:14px;flex-shrink:0;}
+  .cloud-status{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--text2);}
+  .cloud-status .dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .user-select{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.78rem;}
+  .icon-btn{background:none;border:none;color:var(--text2);font-size:1rem;position:relative;padding:4px;}
+  .icon-btn .nbadge{position:absolute;top:-2px;right:-2px;background:var(--red);color:#fff;font-size:.6rem;font-weight:800;border-radius:100px;padding:0 4px;}
+  .btn-primary{background:var(--purple);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:.8rem;}
+  .btn-primary:hover{opacity:.9;}
+
+  main.content{flex:1;min-width:0;padding:22px 24px 70px;overflow-x:auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .page-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .page-head h1{font-size:1.2rem;display:flex;align-items:center;gap:8px;}
+  .page-head p{font-size:.8rem;color:var(--text2);margin-top:4px;}
+
+  .btn-ghost{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 13px;font-size:.78rem;color:var(--text2);}
+  .btn-ghost:hover{border-color:var(--text2);color:var(--text);}
+  .btn-purple-out{background:var(--purple-bg);border:1px solid var(--purple);color:#D6C9FF;border-radius:8px;padding:8px 14px;font-size:.78rem;font-weight:700;}
+  .btn-purple-out:hover{opacity:.9;}
+  .btn-danger-out{background:var(--red-bg);border:1px solid var(--red);color:#FCA5A5;border-radius:8px;padding:7px 12px;font-size:.75rem;font-weight:700;}
+  .btn-green-out{background:var(--green-bg);border:1px solid var(--green);color:#5EEAD4;border-radius:8px;padding:7px 12px;font-size:.75rem;font-weight:700;}
+
+  .cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+  @media(max-width:1200px){ .cards-grid{grid-template-columns:repeat(3,1fr);} }
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .card .val{font-size:1.5rem;font-weight:800;}
+  .card .lbl{font-size:.73rem;color:var(--text2);margin-top:3px;}
+  .card.accent-purple .val{color:var(--purple);}
+  .card.accent-green .val{color:var(--green);}
+  .card.accent-red .val{color:var(--red);}
+  .card.accent-yellow .val{color:var(--yellow);}
+  .card.accent-blue .val{color:var(--blue);}
+
+  .pipeline{display:flex;gap:10px;margin-bottom:26px;flex-wrap:wrap;}
+  .pipe-stage{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+  .pipe-stage .n{font-size:1.6rem;font-weight:800;}
+  .pipe-stage .l{font-size:.72rem;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:.03em;}
+  .pipe-arrow{align-self:center;color:var(--text2);font-size:1.2rem;}
+
+  .section-title{font-size:.95rem;font-weight:700;margin:22px 0 12px;}
+
+  .table-wrap{border:1px solid var(--border);border-radius:12px;overflow:auto;background:var(--panel);margin-bottom:8px;}
+  table{border-collapse:collapse;width:100%;min-width:760px;}
+  th,td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:9px 11px;font-size:.8rem;}
+  th{background:var(--panel2);text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;color:var(--text2);white-space:nowrap;}
+  td{vertical-align:middle;}
+  td input,td select,td textarea{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:.78rem;color:var(--text);width:100%;}
+  td textarea{min-height:44px;resize:vertical;}
+  tr:last-child td{border-bottom:none;}
+
+  .tag{display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:700;padding:4px 9px;border-radius:100px;white-space:nowrap;}
+  .tag .dot{width:6px;height:6px;border-radius:50%;}
+  .tag.green{background:var(--green-bg);color:var(--green);}
+  .tag.red{background:var(--red-bg);color:var(--red);}
+  .tag.yellow{background:var(--yellow-bg);color:var(--yellow);}
+  .tag.blue{background:var(--blue-bg);color:var(--blue);}
+  .tag.gray{background:var(--panel2);color:var(--text2);}
+  .tag.purple{background:var(--purple-bg);color:var(--purple);}
+
+  .progress-track{height:5px;border-radius:100px;background:var(--border);overflow:hidden;min-width:60px;}
+  .progress-fill{height:100%;border-radius:100px;background:var(--green);}
+
+  .prod-link{color:var(--text);font-weight:700;cursor:pointer;}
+  .prod-link:hover{color:var(--purple);text-decoration:underline;}
+
+  .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .toolbar input[type=text], .toolbar select{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:.78rem;}
+  .toolbar .spacer{flex:1;}
+
+  .view-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .view-tab{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:.78rem;color:var(--text2);}
+  .view-tab.active{background:var(--purple-bg);border-color:var(--purple);color:var(--text);}
+
+  .prep-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
+  .prep-card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+  .prep-card .head h3{font-size:.95rem;}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  @media(max-width:640px){ .field-grid{grid-template-columns:1fr;} }
+  .field label{display:block;font-size:.72rem;color:var(--text2);margin-bottom:4px;}
+  .field input, .field select, .field textarea{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:.8rem;}
+  .link-row{display:flex;gap:6px;align-items:center;margin-bottom:8px;}
+  .link-row input{flex:1;}
+  .link-row .mini{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:.7rem;}
+
+  .cmd-item{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:10px;padding:13px 16px;margin-bottom:10px;}
+  .cmd-item.crit{border-left-color:var(--red);}
+  .cmd-item.warn{border-left-color:var(--yellow);}
+  .cmd-item.ok{border-left-color:var(--green);}
+  .cmd-item .txt{flex:1;font-size:.85rem;}
+  .cmd-item .n{font-weight:800;color:var(--purple);}
+
+  .hist-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.82rem;}
+  .hist-item:last-child{border-bottom:none;}
+  .hist-item .u{font-weight:700;color:var(--purple);}
+  .hist-item .t{margin-left:auto;color:var(--text2);font-size:.72rem;white-space:nowrap;}
+
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center;padding:20px;}
+  .modal-bg.show{display:flex;}
+  .ficha{background:var(--panel);border:1px solid var(--border);border-radius:16px;max-width:880px;width:100%;max-height:88vh;display:flex;flex-direction:column;}
+  .ficha-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .ficha-head h2{font-size:1.05rem;}
+  .ficha-head .close{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.8rem;}
+  .ficha-tabs{display:flex;gap:2px;padding:0 22px;border-bottom:1px solid var(--border);overflow-x:auto;}
+  .ficha-tab{background:none;border:none;padding:12px 12px;font-size:.78rem;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;}
+  .ficha-tab.active{color:var(--text);border-color:var(--purple);}
+  .ficha-body{padding:20px 22px;overflow-y:auto;flex:1;}
+  .kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:600px){ .kv-grid{grid-template-columns:1fr;} }
+  .kv{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+  .kv .l{font-size:.68rem;color:var(--text2);text-transform:uppercase;letter-spacing:.03em;}
+  .kv .v{font-size:.92rem;font-weight:700;margin-top:2px;}
+
+  .small-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:110;align-items:center;justify-content:center;padding:20px;}
+  .small-modal-bg.show{display:flex;}
+  .small-modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;}
+  .small-modal h3{font-size:.95rem;margin-bottom:14px;}
+  .small-modal .actions{display:flex;gap:10px;margin-top:16px;}
+  .small-modal .actions button{flex:1;border-radius:8px;padding:9px;font-size:.82rem;font-weight:700;border:none;}
+  .small-modal .cancel{background:var(--panel2);color:var(--text2);}
+  .small-modal .save{background:var(--purple);color:#fff;}
+
+  #toastWrap{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px;}
+  .toast{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:11px 16px;font-size:.82rem;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:toastIn .2s ease;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+  .empty-msg{color:var(--text2);font-size:.85rem;padding:14px 4px;}
+  .board-wrap{overflow-x:auto;}
+  .colhead-resp{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:100px;background:var(--purple-bg);color:var(--purple);display:inline-block;margin-bottom:5px;}
+  .colhead-resp-select{font-size:.65rem;font-weight:700;padding:3px 8px;border-radius:100px;background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple);margin-bottom:6px;display:block;}
+  .boardlinks-wrap{display:flex;flex-direction:column;gap:5px;min-width:150px;}
+  .boardlink-row{display:flex;gap:4px;align-items:center;}
+  .boardlink-row input{flex:1;}
+  .mini-del{background:var(--red-bg);border:1px solid var(--red);color:var(--red);border-radius:6px;padding:4px 7px;font-size:.68rem;flex-shrink:0;}
+  .add-link-btn{padding:5px 10px;font-size:.7rem;align-self:flex-start;}
+  .colhead-pct{font-size:.65rem;color:var(--text2);margin-top:3px;text-align:right;}
+
+  .week-board{display:flex;flex-direction:column;gap:22px;margin-bottom:30px;}
+  .day-section{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;}
+  .day-section .day-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px;}
+  .day-section .day-head h3{font-size:1.05rem;font-weight:800;}
+  .day-section .day-head .cnt{font-size:.75rem;color:var(--text2);}
+  .day-tasks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+  .task-card{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:18px;}
+  .task-card.done{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset;}
+  .task-card .ttype{font-size:.95rem;font-weight:800;margin-bottom:10px;}
+  .task-card .tmeta{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text2);margin-bottom:12px;}
+  .task-card .tprod{font-size:.72rem;color:var(--purple);margin-bottom:12px;background:var(--purple-bg);display:inline-block;padding:4px 10px;border-radius:100px;}
+  .task-card label{display:block;font-size:.7rem;color:var(--text2);margin:10px 0 5px;text-transform:uppercase;letter-spacing:.03em;}
+  .task-card input,.task-card select{width:100%;font-size:.82rem;padding:8px 10px;border-radius:8px;}
+  .task-card input[type=date]{background:var(--blue-bg);border:1px solid var(--blue);color:var(--text);}
+  .task-card select{background:var(--purple-bg);border:1px solid var(--purple);color:var(--text);}
+  .task-card .boardlinks-wrap input[type=text]{background:var(--green-bg);border:1px solid var(--green);color:var(--text);}
+  .task-card .tdel{width:100%;text-align:center;font-size:.75rem;padding:8px;margin-top:14px;}
+  .round-row{display:flex;gap:6px;}
+  .round-pill{flex:1;text-align:center;font-size:.72rem;font-weight:700;padding:8px 4px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text2);cursor:pointer;}
+  .round-pill.done{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+
+  .person-folder{margin-bottom:20px;}
+  .person-folder-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .person-folder-head .avatar{width:30px;height:30px;font-size:.8rem;border-radius:8px;}
+  .person-folder-head h4{font-size:.92rem;font-weight:800;}
+  .person-folder-head .cnt{font-size:.72rem;color:var(--text2);margin-left:auto;}
+  .person-tasks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+
+  .html-block{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+  .html-block textarea{width:100%;min-height:90px;font-family:'Courier New',monospace;font-size:.75rem;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);resize:vertical;}
+  .html-preview{margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;}
+  .html-preview iframe{width:100%;height:220px;border:none;display:block;}
+</style>
+</head>
+<body>
+
+<div id="shell">
+  <aside>
+    <div class="logo"><div class="ico">🧩</div>OPS CENTER</div>
+
+    <div class="navgroup">
+      <h4>Operación</h4>
+      <div class="navitem" data-nav="dashboard"><span class="l">◈ Dashboard</span></div>
+      <div class="navitem" data-nav="tablero"><span class="l">📋 Tablero</span></div>
+      <div class="navitem" data-nav="pretesteo"><span class="l">🕵 Pre-Testeo</span></div>
+      <div class="navitem" data-nav="testeo"><span class="l">🧪 Testeo</span></div>
+      <div class="navitem" data-nav="optimizacion"><span class="l">📈 Optimización</span></div>
+      <div class="navitem" data-nav="escala"><span class="l">🚀 Escala</span></div>
+      <div class="navitem" data-nav="tareas"><span class="l">✓ Tareas</span></div>
+      <div class="navitem" data-nav="tutoriales"><span class="l">🎓 Tutoriales</span></div>
+    </div>
+
+    <div class="navgroup">
+      <h4>Catálogo</h4>
+      <div class="navitem" data-nav="productos"><span class="l">📦 Productos</span></div>
+      <div class="navitem" data-nav="campanas"><span class="l">📣 Campañas</span></div>
+      <div class="navitem" data-nav="flujos"><span class="l">💬 Flujos WhatsApp</span></div>
+      <div class="navitem" data-nav="anuncios"><span class="l">🎬 Anuncios</span></div>
+    </div>
+
+    <div class="navgroup">
+      <h4>Equipo</h4>
+      <div class="navitem" data-nav="equipo"><span class="l">👥 Equipo y roles</span></div>
+      <div class="navitem" data-nav="actividad"><span class="l">📜 Actividad</span></div>
+    </div>
+
+    <div class="navgroup">
+      <h4>Inteligencia</h4>
+      <div class="navitem" data-nav="comandos"><span class="l">⌘ Centro de Comandos</span></div>
+      <div class="navitem" data-nav="analiticas"><span class="l">📊 Analíticas</span></div>
+    </div>
+  </aside>
+
+  <div id="main">
+    <header class="topbar">
+      <div class="searchbox">🔍 <input type="text" id="globalSearch" placeholder="Buscar en todo..."></div>
+      <div class="top-right">
+        <div class="cloud-status"><span class="dot"></span> En la nube</div>
+        <select class="user-select" id="activeUser">
+          <option>Jordan · Admin</option>
+          <option>Cami · Creativos</option>
+          <option>Meli · Creativos</option>
+          <option>Jesús · Flujos</option>
+        </select>
+        <button class="icon-btn">🔔<span class="nbadge" id="notifBadge">0</span></button>
+        <button class="btn-primary" data-action="openNewProduct">+ Crear</button>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <div class="view" id="view-dashboard">
+        <div class="page-head"><div><h1>◈ Dashboard</h1><p>Vista general de la operación</p></div>
+          <button class="btn-ghost" id="resetDemoBtn">Reiniciar datos demo</button>
+        </div>
+        <div class="cards-grid" id="dashCards"></div>
+        <div class="section-title">Pipeline</div>
+        <div class="pipeline" id="dashPipeline"></div>
+        <div class="section-title">Centro de Comandos</div>
+        <div id="dashCmdPreview"></div>
+      </div>
+
+      <div class="view" id="view-tablero">
+        <div class="page-head">
+          <div><h1>📋 Tablero de operaciones</h1><p>Edita cualquier celda · datos guardados automáticamente</p></div>
+        </div>
+        <div class="view-tabs" id="boardViewTabs"></div>
+        <div class="toolbar">
+          <input type="text" id="boardSearch" placeholder="Buscar producto...">
+          <select id="boardStatus"><option value="todos">Estado: todos</option><option value="terminado">Terminado</option><option value="pendiente">Pendiente</option><option value="en_proceso">En proceso</option></select>
+          <select id="boardResp"><option value="todos">Responsable: todos</option><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option></select>
+          <select id="boardCountry"><option value="todos">País: todos</option></select>
+          <div class="spacer"></div>
+          <button class="btn-ghost" id="boardClear">Limpiar</button>
+        </div>
+        <div class="board-wrap"><div class="table-wrap"><table id="boardTable"></table></div></div>
+      </div>
+
+      <div class="view" id="view-pretesteo">
+        <div class="page-head"><div><h1>🕵 Pre-Testeo</h1><p>Espionaje → Productos para lanzar → Información clave de los productos aprobados</p></div></div>
+
+        <div class="section-title">1. Espionaje (Ad Library)</div>
+        <div class="toolbar">
+          <button class="btn-purple-out" data-action="openAddLink">+ Agregar link</button>
+          <button class="btn-ghost" data-action="openPasteLinks">Pegar varios links</button>
+          <div class="spacer"></div>
+          <span style="color:var(--text2);font-size:.75rem;" id="spyCounter">0 / 40 links</span>
+        </div>
+        <div class="table-wrap"><table id="spyTable"></table></div>
+
+        <div class="section-title">2. Productos para lanzar</div>
+        <div class="table-wrap"><table id="revisionTable"></table></div>
+
+        <div class="section-title">3. Tablero</div>
+        <div class="board-wrap"><div class="table-wrap"><table id="prepBoardTable"></table></div></div>
+      </div>
+
+      <div class="view" id="view-testeo">
+        <div class="page-head"><div><h1>🧪 Testeo</h1><p>Productos en testeo — mismos productos de Pre-Testeo, con sus datos de anuncios y flujo</p></div></div>
+
+        <div class="table-wrap"><table id="adsTable"></table></div>
+      </div>
+
+      <div class="view" id="view-optimizacion">
+        <div class="page-head"><div><h1>📈 Optimización</h1><p>Tablero de métricas — facturación, ganancia y ROAS calculados automáticamente</p></div></div>
+        <div class="board-wrap"><div class="table-wrap"><table id="optBoardTable"></table></div></div>
+        <div class="section-title">Checklist por producto</div>
+        <div id="optChecklists"></div>
+      </div>
+
+      <div class="view" id="view-escala">
+        <div class="page-head"><div><h1>🚀 Escala</h1><p>Campañas, CBO, errores, upsells y anuncios ganadores</p></div></div>
+        <div id="scaleList"></div>
+      </div>
+
+      <div class="view" id="view-comandos">
+        <div class="page-head"><div><h1>⌘ Centro de Comandos</h1><p>Qué necesita atención el equipo ahora mismo</p></div></div>
+        <div id="cmdList"></div>
+      </div>
+
+      <div class="view" id="view-actividad">
+        <div class="page-head"><div><h1>📜 Actividad</h1><p>Historial de acciones del equipo</p></div></div>
+        <div id="histList"></div>
+      </div>
+
+      <div class="view" id="view-productos"><div class="page-head"><div><h1>📦 Productos</h1><p>Todos los productos del sistema</p></div></div><div id="productosList"></div></div>
+      <div class="view" id="view-campanas"><div class="page-head"><div><h1>📣 Campañas</h1><p>Historial de entradas de campaña por producto</p></div></div><div id="campanasList"></div></div>
+      <div class="view" id="view-flujos"><div class="page-head"><div><h1>💬 Flujos WhatsApp</h1><p>Palabra clave y estado de flujo por producto</p></div></div><div id="flujosList"></div></div>
+      <div class="view" id="view-anuncios"><div class="page-head"><div><h1>🎬 Anuncios</h1><p>Anuncios en testeo y anuncios ganadores en escala</p></div></div><div id="anunciosList"></div></div>
+      <div class="view" id="view-equipo"><div class="page-head"><div><h1>👥 Equipo y roles</h1><p>Jordan (Admin) · Cami y Meli (Creativos) · Jesús (Flujos)</p></div></div></div>
+      <div class="view" id="view-analiticas"><div class="page-head"><div><h1>📊 Analíticas</h1><p>Resumen financiero global</p></div></div><div id="analiticasBody"></div></div>
+      <div class="view" id="view-tareas">
+        <div class="page-head"><div><h1>✓ Tareas</h1><p>Organización semanal y diaria del equipo — correlacionada con Pre-Testeo, Testeo, Optimización y Escala</p></div></div>
+
+        <div class="toolbar">
+          <select id="taskPersonFilter">
+            <option value="todos">Toda persona</option>
+            <option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option>
+          </select>
+          <div class="spacer"></div>
+          <button class="btn-purple-out" data-action="openAssignTask">+ Asignar tarea</button>
+        </div>
+
+        <div class="week-board" id="weekBoard"></div>
+      </div>
+
+      <div class="view" id="view-tutoriales">
+        <div class="page-head"><div><h1>🎓 Tutoriales</h1><p>Clases de procesos — el curso virtual del equipo, paso a paso</p></div></div>
+        <div id="tutorialCourse"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div class="modal-bg" id="fichaModalBg">
+  <div class="ficha">
+    <div class="ficha-head">
+      <h2 id="fichaTitle">Producto</h2>
+      <button class="close" id="fichaClose">✕ Cerrar</button>
+    </div>
+    <div class="ficha-tabs" id="fichaTabs"></div>
+    <div class="ficha-body" id="fichaBody"></div>
+  </div>
+</div>
+
+<div class="small-modal-bg" id="addLinkModalBg">
+  <div class="small-modal">
+    <h3>Agregar link de espionaje</h3>
+    <div class="field"><label>Link</label><input type="text" id="al_link"></div>
+    <div class="field"><label>Nombre provisional</label><input type="text" id="al_name"></div>
+    <div class="field"><label>Nicho</label><input type="text" id="al_niche"></div>
+    <div class="field"><label>Responsable</label>
+      <select id="al_resp"><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option></select>
+    </div>
+    <div class="field"><label>Observaciones</label><textarea id="al_notes"></textarea></div>
+    <div class="actions"><button class="cancel" data-action="closeAddLink">Cancelar</button><button class="save" data-action="saveAddLink">Agregar</button></div>
+  </div>
+</div>
+
+<div class="small-modal-bg" id="pasteLinksModalBg">
+  <div class="small-modal">
+    <h3>Pegar varios links (uno por línea)</h3>
+    <div class="field"><textarea id="pl_bulk" style="min-height:140px;"></textarea></div>
+    <div class="actions"><button class="cancel" data-action="closePasteLinks">Cancelar</button><button class="save" data-action="savePasteLinks">Agregar todos</button></div>
+  </div>
+</div>
+
+<div class="small-modal-bg" id="newProductModalBg">
+  <div class="small-modal">
+    <h3>Crear producto directamente</h3>
+    <div class="field"><label>Nombre</label><input type="text" id="np_name"></div>
+    <div class="field"><label>País</label><input type="text" id="np_country"></div>
+    <div class="field"><label>Nicho</label><input type="text" id="np_niche"></div>
+    <div class="field"><label>Responsable</label>
+      <select id="np_resp"><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option></select>
+    </div>
+    <div class="actions"><button class="cancel" data-action="closeNewProduct">Cancelar</button><button class="save" data-action="saveNewProduct">Crear</button></div>
+  </div>
+</div>
+
+<div class="small-modal-bg" id="assignTaskModalBg">
+  <div class="small-modal">
+    <h3>Asignar tarea</h3>
+    <div class="field"><label>Día</label>
+      <select id="at_day"><option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option></select>
+    </div>
+    <div class="field"><label>Tipo de tarea</label><select id="at_type"></select></div>
+    <div class="field"><label>Persona</label><select id="at_person"><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option></select></div>
+    <div class="field"><label>Producto relacionado (opcional)</label><select id="at_product"><option value="">— Ninguno —</option></select></div>
+    <div class="field"><label>Tiempo estimado</label><input type="text" id="at_time" placeholder="Ej: 45 min"></div>
+    <div class="field"><label>Fecha</label><input type="date" id="at_fecha"></div>
+    <div class="actions"><button class="cancel" data-action="closeAssignTask">Cancelar</button><button class="save" data-action="saveAssignTask">Asignar</button></div>
+  </div>
+</div>
+
+<div id="toastWrap"></div>
+
+<script>
+(function(){
+
+var STORAGE_KEY = 'ops_center_db_v1';
+
+function defaultDB(){
+  return {
+    spyLinks: [
+      { id:'sl1', urls:['facebook.com/ads/library/?id=demo1'], name:'Devocional 40 días', niche:'Espiritualidad', responsible:'Jordan', date:today(), notes:'', status:'aprobado', potencial:'alto', keywordActivador:'SALMOS', decision:'revisar', productId:null },
+      { id:'sl2', urls:['facebook.com/ads/library/?id=demo2'], name:'Comida para bebés', niche:'Maternidad', responsible:'Cami', date:today(), notes:'', status:'aprobado', potencial:'medio', keywordActivador:'RECETAS', decision:'revisar', productId:null }
+    ],
+    products: seedProducts(),
+    history: [],
+    boardResp: { links:'Jordan', ads:'Cami', funnel:'Jesús', texto:'Meli', campanas:'Jordan', linkAds:'Cami', linkCopy:'Meli', activador:'Jesús', sendy:'Jesús' },
+    weekTasks: seedWeekTasks(),
+    tutorialContent: {},
+    ui: { activeNav:'dashboard', boardView:'todos', boardFilters:{ search:'', status:'todos', responsible:'todos', country:'todos' } }
+  };
+}
+
+function today(){ return new Date().toISOString().slice(0,10); }
+function nowLabel(){ var d=new Date(); return d.toLocaleDateString()+' '+d.toLocaleTimeString().slice(0,5); }
+function uid(p){ return (p||'id')+'_'+Date.now()+'_'+Math.floor(Math.random()*1000); }
+function safeDiv(a,b){ a=parseFloat(a)||0; b=parseFloat(b)||0; return b ? a/b : 0; }
+function fmt(n){ n = parseFloat(n)||0; return n.toFixed(2); }
+function fmtPct(n){ return Math.round(n*100)/100; }
+
+function emptyProduct(name, country, niche, responsible){
+  return {
+    id: uid('p'),
+    name: name || 'Nuevo producto',
+    niche: niche || '', country: country || '', price:'', currency:'USD',
+    responsible: responsible || 'Jordan', keyword:'',
+    originalLink:'', pageLink:'', driveLink:'', docsLink:'', notes:'', boardLinks: [''], refLinks: [''],
+    phase: 'preparacion', createdAt: today(),
+    ads: { responsible:'Cami', status:'pendiente', textoStatus:'pendiente', count:0, driveLink:'', copyLink:'', fechaInicio:'', fechaFinal:'', textoPrincipal:'', hook:'', cta:'', textoResponsable:'Meli', textoDoc:'', activo:false, bm:'', cuentaPublicitaria:'', sendyCorreo:'', sendyContrasena:'', sendyWhatsapp:'', sendyId:'' },
+    funnel: { responsible:'Jesús', country: country || '', status:'pendiente', linkFlujo:'', linkDrive:'', observaciones:'', testeoEstado:'pendiente' },
+    campaignEntries: [],
+    idealCosts: { costoMensajeIdeal:'', costoCompraIdeal:'' },
+    campaignDecision: 'pendiente',
+    opt: { fecha:'', pais: country || '', gasto:'', mensajes:'', compras:'' },
+    campaignLaunchStatus: 'pendiente',
+    activadorFlujos: '',
+    sendyAccount: { cuenta:'', correo:'', contrasena:'', link:'' },
+    conversion: { mensajes:'', compras:'' },
+    checklist: { productoDigital:false, productoDigitalLink:'', comentariosPositivos:false, pixelConfigurado:false, upsell:false, sendyConfigurado:false, flujoOptimizado:false },
+    scale: {
+      campaigns: [], cbo:{ funciona:'testeando', presupuesto:'', cantidadCbo:0, anunciosActivos:0, anunciosEnCbo:0 },
+      resumen:{ hoy:{gasto:'',facturacion:''}, ayer:{gasto:'',facturacion:''}, semana:{gasto:'',facturacion:''} },
+      upsells:[], anunciosGanadores:[], driveGanadoresGeneral:''
+    }
+  };
+}
+
+function seedWeekTasks(){
+  return [
+    { id:uid('wt'), day:0, taskTypeId:'investigacion', assignee:'Jordan', producto:'', tiempoEstimado:'45 min', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
+    { id:uid('wt'), day:0, taskTypeId:'edicion_anuncios', assignee:'Cami', producto:'', tiempoEstimado:'1 h', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
+    { id:uid('wt'), day:0, taskTypeId:'revision_chats', assignee:'Meli', producto:'', tiempoEstimado:'20 min', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
+    { id:uid('wt'), day:0, taskTypeId:'ideas_upsell', assignee:'Meli', producto:'', tiempoEstimado:'30 min', fecha:'2026-08-24', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
+    { id:uid('wt'), day:1, taskTypeId:'edicion_flujo', assignee:'Jesús', producto:'', tiempoEstimado:'1 h', fecha:'2026-08-25', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
+    { id:uid('wt'), day:1, taskTypeId:'revision_campanas', assignee:'Jordan', producto:'', tiempoEstimado:'20 min', fecha:'2026-08-25', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' },
+    { id:uid('wt'), day:2, taskTypeId:'campanas_escala', assignee:'Jordan', producto:'', tiempoEstimado:'30 min', fecha:'2026-08-26', status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente' }
+  ];
+}
+function seedProducts(){
+  var names = [
+    ['DEVOCIONAL 40 DÍAS','testeo','México','Espiritualidad','Jordan'],
+    ['COMIDA PARA BEBÉS','testeo','México','Maternidad','Cami'],
+    ['CHAU CONTRACTURAS','optimizacion','Chile','Salud','Meli'],
+    ['ACTIVIDADES DEL ARTE','optimizacion','México','Educación','Cami'],
+    ['FÚTBOL','escala','Chile','Deporte','Jesús'],
+    ['ACTIVIDADES BIOLOGÍA','preparacion','México','Educación','Meli'],
+    ['PORTADAS ESCOLARES','preparacion','México','Educación','Cami']
+  ];
+  return names.map(function(n){
+    var p = emptyProduct(n[0], n[2], n[3], n[4]);
+    p.phase = n[1];
+    p.keyword = n[0].split(' ')[0].toUpperCase();
+    p.originalLink = 'facebook.com/ads/library/?id='+p.id;
+    p.pageLink = 'systeme.io/'+p.id;
+    p.driveLink = 'drive.google.com/'+p.id;
+    p.boardLinks = [p.driveLink];
+    p.refLinks = [p.originalLink];
+    p.docsLink = 'docs.google.com/'+p.id;
+    if(['testeo','optimizacion','escala'].indexOf(p.phase)>-1){
+      p.ads.status='terminado'; p.ads.textoStatus='terminado'; p.ads.count=8; p.ads.driveLink='drive.google.com/'+p.id+'/ads'; p.ads.copyLink='drive.google.com/'+p.id+'/copy';
+      p.ads.textoPrincipal='Copy principal de '+p.name; p.ads.hook='¿Sabías que...?'; p.ads.cta='Escríbenos ya';
+      p.ads.activo=true; p.ads.bm='BM 10293847'; p.ads.cuentaPublicitaria='Cuenta Ads 1'; p.ads.count=5;
+      p.ads.sendyCorreo='equipo@dominio.com'; p.ads.sendyContrasena='••••••••'; p.ads.sendyWhatsapp='+52 1 55 00 00 00 00'; p.ads.sendyId='SDY-1029';
+      p.funnel.status='terminado'; p.funnel.linkFlujo='flujo.io/'+p.id; p.funnel.linkDrive='drive.google.com/'+p.id+'/flujo'; p.funnel.testeoEstado='activo';
+    }
+    if(['optimizacion','escala'].indexOf(p.phase)>-1){
+      p.opt = { fecha: today(), pais: p.country, gasto: 120, mensajes: 80, compras: 14 };
+      p.checklist = { productoDigital:true, productoDigitalLink:'systeme.io/acceso/'+p.id, comentariosPositivos:true, pixelConfigurado:true, upsell:true, sendyConfigurado:true, flujoOptimizado:true };
+      p.campaignLaunchStatus = 'terminado';
+    }
+    if(p.phase === 'escala'){ p.activadorFlujos = 'Escribe la palabra "'+p.keyword+'" para recibir tu regalo'; }
+    if(p.phase === 'escala'){
+      p.scale.campaigns.push({ id:uid('sc'), fecha:'2026-08-21', pais:p.country, cuentaPublicitaria:'Cuenta Ads 1', bm:'BM 10293847', gasto:180, mensajes:95, compras:22 });
+      p.scale.campaigns.push({ id:uid('sc'), fecha:'2026-08-22', pais:p.country, cuentaPublicitaria:'Cuenta Ads 1', bm:'BM 10293847', gasto:200, mensajes:110, compras:26 });
+      p.scale.campaigns.push({ id:uid('sc'), fecha:today(), pais:p.country, cuentaPublicitaria:'Cuenta Ads 1', bm:'BM 10293847', gasto:220, mensajes:120, compras:29 });
+      p.scale.cbo = { funciona:'si', presupuesto:60, cantidadCbo:2, anunciosActivos:12, anunciosEnCbo:8 };
+      p.scale.resumen = { hoy:{gasto:60,facturacion:210}, ayer:{gasto:55,facturacion:190}, semana:{gasto:380,facturacion:1320} };
+      p.scale.upsells.push({ id:uid('up'), nombre:'Curso avanzado', precio:15, ventas:9, conversion:12, facturacion:135, estado:'funcionando', linkProducto:'systeme.io/upsell/'+p.id, copyProducto:'Copy del upsell de '+p.name });
+      p.scale.anunciosGanadores.push({ id:uid('ag'), fecha:today(), nombre:'Anuncio testimonial', linkVideo:'', linkDrive:'', validado:true, tarea:{ responsable:'Cami', fecha:today(), prioridad:'alta', estado:'terminado' } });
+      p.scale.anunciosGanadores.push({ id:uid('ag'), fecha:today(), nombre:'Anuncio hook nuevo', linkVideo:'', linkDrive:'', validado:false, tarea:{ responsable:'Meli', fecha:today(), prioridad:'media', estado:'pendiente' } });
+      p.scale.driveGanadoresGeneral = 'drive.google.com/'+p.id+'/ganadores';
+    }
+    return p;
+  });
+}
+
+var TASK_CATALOG = [
+  { id:'investigacion', label:'Investigación / Espionaje', fieldType:'link', linkLabel:'Link de documento de investigación' },
+  { id:'campanas_testeo', label:'Lanzar campañas de testeo', fieldType:'status' },
+  { id:'edicion_anuncios', label:'Edición de anuncios (subir a Drive)', fieldType:'link', linkLabel:'Link de Drive de anuncios' },
+  { id:'edicion_flujo', label:'Edición de flujo principal (Sendy)', fieldType:'status' },
+  { id:'ideas_upsell', label:'Ideas de Upsell', fieldType:'link', linkLabel:'Link de documento de ideas' },
+  { id:'investigacion_upsell', label:'Investigación de posibles Upsells', fieldType:'link', linkLabel:'Link de documento' },
+  { id:'campanas_escala', label:'Lanzamiento de campañas de escala', fieldType:'status' },
+  { id:'compra_digital', label:'Compra de productos digitales', fieldType:'link', linkLabel:'Link del producto comprado' },
+  { id:'revision_chats', label:'Revisión de chats / flujos (x3 al día)', fieldType:'rounds3' },
+  { id:'revision_campanas', label:'Revisión de campañas (x3 al día)', fieldType:'rounds3' }
+];
+var DAY_LABELS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+var TUTORIAL_CATALOG = [
+  { id:'tut_investigacion', label:'Investigación / Espionaje' },
+  { id:'tut_subir_anuncios', label:'Subir anuncios' },
+  { id:'tut_editar_anuncios', label:'Editar anuncios' },
+  { id:'tut_editar_flujos', label:'Editar flujos' },
+  { id:'tut_editar_upsell', label:'Editar Upsell' },
+  { id:'tut_editar_flujo_upsell', label:'Editar flujo de Upsell' },
+  { id:'tut_herramienta_campanas', label:'Herramienta de campañas' },
+  { id:'tut_campana_testeo', label:'Campaña de testeo' },
+  { id:'tut_comprar_digitales', label:'Comprar productos digitales' },
+  { id:'tut_revision_chats_sendy', label:'Revisión de chats (Sendy Pro)' },
+  { id:'tut_revision_campanas', label:'Revisión de campañas (3 veces al día)' }
+];
+
+var db = loadDB();
+function loadDB(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      var parsed = JSON.parse(raw);
+      migrateDB(parsed);
+      return parsed;
+    }
+  }catch(e){}
+  var d = defaultDB();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+  return d;
+}
+function migrateDB(d){
+  if(!d.boardResp){ d.boardResp = { links:'Jordan', ads:'Cami', funnel:'Jesús', texto:'Meli', campanas:'Jordan', linkAds:'Cami', linkCopy:'Meli', activador:'Jesús', sendy:'Jesús' }; }
+  else{
+    if(!d.boardResp.campanas) d.boardResp.campanas = d.boardResp.optimizacion || 'Jordan';
+    if(!d.boardResp.activador) d.boardResp.activador = d.boardResp.escala || 'Jesús';
+    if(!d.boardResp.sendy) d.boardResp.sendy = 'Jesús';
+  }
+  if(!d.weekTasks){ d.weekTasks = seedWeekTasks(); }
+  else{
+    d.weekTasks.forEach(function(t){
+      if(!t.links){ t.links = t.link ? [t.link] : ['']; delete t.link; }
+      if(t.links.length===0) t.links.push('');
+      if(t.fecha === undefined) t.fecha = '';
+    });
+  }
+  if(!d.tutorialContent){ d.tutorialContent = {}; }
+  (d.spyLinks||[]).forEach(function(l){
+    if(l.status === 'interesante') l.status = 'aprobado';
+    if(l.status === 'convertido') l.status = 'aprobado';
+    if(l.potencial === undefined) l.potencial = 'medio';
+    if(l.keywordActivador === undefined) l.keywordActivador = '';
+    if(l.decision === undefined) l.decision = 'revisar';
+    if(l.productId === undefined) l.productId = null;
+    if(!l.urls){ l.urls = l.url ? [l.url] : ['']; delete l.url; }
+    if(l.urls.length === 0) l.urls.push('');
+  });
+  (d.products||[]).forEach(function(p){
+    if(!p.boardLinks){ p.boardLinks = p.driveLink ? [p.driveLink] : ['']; }
+    if(!p.refLinks){ p.refLinks = p.originalLink ? [p.originalLink] : ['']; }
+    if(p.ads && p.ads.textoStatus === undefined){ p.ads.textoStatus = 'pendiente'; }
+    if(p.ads && p.ads.copyLink === undefined){ p.ads.copyLink = ''; }
+    if(p.ads && p.ads.activo === undefined){ p.ads.activo = false; }
+    if(p.ads && p.ads.bm === undefined){ p.ads.bm = ''; }
+    if(p.ads && p.ads.cuentaPublicitaria === undefined){ p.ads.cuentaPublicitaria = ''; }
+    if(p.ads && p.ads.sendyCorreo === undefined){ p.ads.sendyCorreo = ''; p.ads.sendyContrasena = ''; p.ads.sendyWhatsapp = ''; p.ads.sendyId = ''; }
+    if(p.funnel && p.funnel.testeoEstado === undefined){ p.funnel.testeoEstado = 'pendiente'; }
+    if(p.optimizacionActiva === undefined && p.campaignLaunchStatus === undefined){ p.campaignLaunchStatus = 'pendiente'; }
+    if(p.activadorFlujos === undefined){ p.activadorFlujos = ''; }
+    if(!p.sendyAccount){ p.sendyAccount = { cuenta:'', correo:'', contrasena:'', link:'' }; }
+    if(!p.opt){
+      var lastCe = (p.campaignEntries||[])[p.campaignEntries.length-1];
+      p.opt = lastCe ? { fecha:lastCe.fecha, pais:lastCe.pais, gasto:lastCe.gasto, mensajes:lastCe.mensajes, compras:lastCe.compras } : { fecha:'', pais:p.country||'', gasto:'', mensajes:'', compras:'' };
+    }
+    if(p.checklist){
+      if(p.checklist.productoDigitalLink === undefined) p.checklist.productoDigitalLink = '';
+      if(p.checklist.pixelConfigurado === undefined) p.checklist.pixelConfigurado = false;
+      delete p.checklist.cantidadUpsells;
+      delete p.checklist.upsellConvierte;
+      delete p.checklist.observaciones;
+    }
+    if(p.scale){
+      delete p.scale.errores;
+      (p.scale.upsells||[]).forEach(function(u){
+        if(u.linkProducto === undefined) u.linkProducto = '';
+        if(u.copyProducto === undefined) u.copyProducto = '';
+      });
+      (p.scale.campaigns||[]).forEach(function(c){
+        if(!c.id) c.id = uid('sc');
+        if(c.fecha === undefined) c.fecha = today();
+        if(c.cuentaPublicitaria === undefined) c.cuentaPublicitaria = '';
+        if(c.bm === undefined) c.bm = '';
+        if(c.mensajes === undefined) c.mensajes = 0;
+      });
+      (p.scale.anunciosGanadores||[]).forEach(function(a){
+        if(a.fecha === undefined) a.fecha = today();
+        if(a.validado === undefined) a.validado = (a.estado === 'ganador');
+        delete a.hook; delete a.pais; delete a.gasto; delete a.ventas; delete a.roas; delete a.estado;
+      });
+    }
+  });
+}
+function saveDB(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
+}
+function resetDemo(){
+  if(!confirm('Esto borrará todo y volverá a los datos de ejemplo. ¿Continuar?')) return;
+  db = defaultDB();
+  saveDB();
+  toast('Datos reiniciados');
+  renderApp();
+}
+
+function currentUser(){ return document.getElementById('activeUser').value.split(' ·')[0]; }
+
+function log(action, productName){
+  db.history.unshift({ user: currentUser(), action: action + (productName ? ' — ' + productName : ''), date: nowLabel() });
+  if(db.history.length > 300) db.history.length = 300;
+}
+
+function toast(msg){
+  var wrap = document.getElementById('toastWrap');
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 3200);
+}
+
+function getDeep(obj, path){
+  return path.split('.').reduce(function(acc,k){ return (acc !== undefined && acc !== null) ? acc[k] : undefined; }, obj);
+}
+function setDeep(obj, path, value){
+  var parts = path.split('.');
+  var cur = obj;
+  for(var i=0;i<parts.length-1;i++){ cur = cur[parts[i]]; }
+  cur[parts[parts.length-1]] = value;
+}
+function findProduct(id){ return db.products.find(function(p){ return p.id === id; }); }
+
+document.querySelectorAll('[data-nav]').forEach(function(el){
+  el.addEventListener('click', function(){
+    db.ui.activeNav = el.getAttribute('data-nav');
+    saveDB();
+    renderApp();
+  });
+});
+
+function switchView(id){
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  var v = document.getElementById('view-'+id);
+  if(v) v.classList.add('active');
+  document.querySelectorAll('[data-nav]').forEach(function(el){ el.classList.toggle('active', el.getAttribute('data-nav')===id); });
+}
+
+document.addEventListener('change', function(e){
+  var el = e.target;
+  if(el.hasAttribute('data-pid') && el.hasAttribute('data-field')){
+    var pid = el.getAttribute('data-pid');
+    var field = el.getAttribute('data-field');
+    var p = findProduct(pid);
+    if(!p) return;
+    var val = el.type === 'checkbox' ? el.checked : el.value;
+    if(el.getAttribute('data-type') === 'number') val = parseFloat(val) || 0;
+    if(el.getAttribute('data-type') === 'bool') val = (val === 'true');
+    var before = getDeep(p, field);
+    setDeep(p, field, val);
+    handleFieldSideEffects(p, field, before, val);
+    saveDB();
+    renderApp();
+  }
+  if(el.hasAttribute('data-slid') && el.hasAttribute('data-field')){
+    var slid = el.getAttribute('data-slid');
+    var sl = db.spyLinks.find(function(x){ return x.id === slid; });
+    if(!sl) return;
+    var f = el.getAttribute('data-field');
+    setDeep(sl, f, el.value);
+    if(sl.productId){
+      var linkedProduct = findProduct(sl.productId);
+      if(linkedProduct){
+        if(f === 'name') linkedProduct.name = el.value;
+        if(f === 'niche') linkedProduct.niche = el.value;
+      }
+    }
+    saveDB();
+    renderApp();
+  }
+});
+
+function handleFieldSideEffects(p, field, before, after){
+  if(field === 'ads.status' && after === 'terminado' && before !== 'terminado'){ log('Anuncios terminados', p.name); toast('Anuncios de "'+p.name+'" marcados como terminados'); }
+  if(field === 'funnel.status' && after === 'terminado' && before !== 'terminado'){ log('Flujo terminado', p.name); toast('Flujo de "'+p.name+'" terminado'); }
+  if(field === 'checklist.sendyConfigurado' && after === true){ log('Sendy configurado', p.name); }
+  if(field === 'name' || field === 'niche'){
+    var linkedSpy = db.spyLinks.find(function(l){ return l.productId === p.id; });
+    if(linkedSpy){
+      if(field === 'name') linkedSpy.name = after;
+      if(field === 'niche') linkedSpy.niche = after;
+    }
+  }
+}
+
+function phaseCount(phase){ return db.products.filter(function(p){ return p.phase === phase; }).length; }
+
+function totalFinance(){
+  var gasto=0, fact=0;
+  db.products.forEach(function(p){
+    if(p.phase === 'optimizacion'){
+      var g = parseFloat(p.opt.gasto)||0;
+      var c = parseFloat(p.opt.compras)||0;
+      gasto += g; fact += c*2;
+    }
+    p.scale.campaigns.forEach(function(c){ gasto += parseFloat(c.gasto)||0; fact += (parseFloat(c.compras)||0)*2; });
+  });
+  return { gasto:gasto, fact:fact, profit:fact-gasto, roas: safeDiv(fact,gasto) };
+}
+
+function renderDashboard(){
+  var fin = totalFinance();
+  var cards = [
+    ['Productos encontrados', db.spyLinks.length, ''],
+    ['Productos seleccionados', db.spyLinks.filter(function(l){return l.status==='interesante';}).length + phaseCount('preparacion') + phaseCount('testeo') + phaseCount('optimizacion') + phaseCount('escala'), 'purple'],
+    ['En testeo', phaseCount('testeo'), 'blue'],
+    ['En optimización', phaseCount('optimizacion'), 'yellow'],
+    ['En escala', phaseCount('escala'), 'green'],
+    ['Rechazados', phaseCount('test_fallido') + db.spyLinks.filter(function(l){return l.status==='descartado';}).length, 'red'],
+    ['Gasto total', '$'+fmt(fin.gasto), ''],
+    ['Facturación', '$'+fmt(fin.fact), 'green'],
+    ['Profit', '$'+fmt(fin.profit), fin.profit>=0?'green':'red'],
+    ['ROAS promedio', fmt(fin.roas)+'x', 'purple']
+  ];
+  document.getElementById('dashCards').innerHTML = cards.map(function(c){
+    return '<div class="card'+(c[2]?' accent-'+c[2]:'')+'"><div class="val">'+c[1]+'</div><div class="lbl">'+c[0]+'</div></div>';
+  }).join('');
+
+  var stages = [
+    ['Pre-Testeo', phaseCount('preparacion')],
+    ['Testeo', phaseCount('testeo')],
+    ['Optimización', phaseCount('optimizacion')],
+    ['Escala', phaseCount('escala')]
+  ];
+  document.getElementById('dashPipeline').innerHTML = stages.map(function(s,i){
+    return '<div class="pipe-stage"><div class="n">'+s[1]+'</div><div class="l">'+s[0]+'</div></div>' + (i<stages.length-1 ? '<div class="pipe-arrow">→</div>' : '');
+  }).join('');
+
+  document.getElementById('dashCmdPreview').innerHTML = buildCommandItems().slice(0,3).join('') || '<div class="empty-msg">Todo al día. Sin alertas pendientes.</div>';
+}
+
+function buildCommandItems(){
+  var items = [];
+  var needAds = db.products.filter(function(p){ return p.phase==='testeo' && p.ads.status!=='terminado'; }).length;
+  if(needAds>0) items.push(cmdRow(needAds+' producto(s) necesitan anuncios', 'warn'));
+
+  var needFunnel = db.products.filter(function(p){ return p.phase==='testeo' && p.funnel.status!=='terminado'; }).length;
+  if(needFunnel>0) items.push(cmdRow(needFunnel+' producto(s) necesitan flujo', 'warn'));
+
+  var highCpa = db.products.filter(function(p){
+    if(p.phase!=='optimizacion') return false;
+    var facturacion = (parseFloat(p.opt.compras)||0) * 2;
+    var gananciaNeta = facturacion - (parseFloat(p.opt.gasto)||0);
+    return gananciaNeta < 0;
+  }).length;
+  if(highCpa>0) items.push(cmdRow(highCpa+' producto(s) con ganancia negativa en optimización', 'crit'));
+
+  var readyForOpt = db.products.filter(function(p){ return p.phase==='testeo' && p.ads.status==='terminado' && p.funnel.status==='terminado'; }).length;
+  if(readyForOpt>0) items.push(cmdRow(readyForOpt+' producto(s) listo(s) para optimización', 'ok'));
+
+  var readyForScale = db.products.filter(function(p){
+    if(p.phase!=='optimizacion') return false;
+    var okChecklist = p.checklist.productoDigital && p.checklist.comentariosPositivos && p.checklist.pixelConfigurado && p.checklist.sendyConfigurado && p.checklist.flujoOptimizado;
+    var factP = (parseFloat(p.opt.compras)||0)*2;
+    var gananciaP = factP - (parseFloat(p.opt.gasto)||0);
+    return okChecklist && gananciaP > 0;
+  }).length;
+  if(readyForScale>0) items.push(cmdRow(readyForScale+' producto(s) listo(s) para escala', 'ok'));
+
+  var pendingValidation = 0;
+  db.products.forEach(function(p){ p.scale.anunciosGanadores.forEach(function(a){ if(!a.validado) pendingValidation++; }); });
+  if(pendingValidation>0) items.push(cmdRow(pendingValidation+' anuncio(s) esperando validación en Escala', 'warn'));
+
+  return items;
+}
+function cmdRow(text, kind){
+  return '<div class="cmd-item '+kind+'"><div class="txt">'+text.replace(/(\d+)/, '<span class="n">$1</span>')+'</div></div>';
+}
+function renderComandos(){
+  var items = buildCommandItems();
+  document.getElementById('cmdList').innerHTML = items.join('') || '<div class="empty-msg">Todo al día. Sin alertas pendientes.</div>';
+  document.getElementById('notifBadge').textContent = items.length;
+}
+
+function renderSpy(){
+  document.getElementById('spyCounter').textContent = db.spyLinks.length + ' / 40 links';
+  var rows = db.spyLinks.map(function(l, i){
+    return '<tr>' +
+      '<td>'+(i+1)+'</td>' +
+      '<td style="min-width:190px;">'+spyLinksEditor(l)+'</td>' +
+      '<td><input type="text" value="'+esc(l.name)+'" data-slid="'+l.id+'" data-field="name"></td>' +
+      '<td><input type="text" value="'+esc(l.niche)+'" data-slid="'+l.id+'" data-field="niche"></td>' +
+      '<td><select data-slid="'+l.id+'" data-field="responsible">'+selOpts(['Jordan','Cami','Meli','Jesús'], l.responsible)+'</select></td>' +
+      '<td><input type="date" value="'+esc(l.date)+'" data-slid="'+l.id+'" data-field="date"></td>' +
+      '<td><input type="text" value="'+esc(l.notes)+'" data-slid="'+l.id+'" data-field="notes"></td>' +
+      '<td>'+spyStatusSelect(l)+'</td>' +
+      '<td><button class="btn-danger-out" data-action="delSpy" data-slid="'+l.id+'">✕</button></td>' +
+    '</tr>';
+  }).join('');
+  document.getElementById('spyTable').innerHTML =
+    '<thead><tr><th>#</th><th>Link</th><th>Nombre</th><th>Nicho</th><th>Responsable</th><th>Fecha</th><th>Lo interesante</th><th>Estado</th><th></th></tr></thead>' +
+    '<tbody>' + (rows || '<tr><td colspan="9" class="empty-msg">Sin links todavía</td></tr>') + '</tbody>';
+
+  var aprobados = db.spyLinks.filter(function(l){ return l.status === 'aprobado'; });
+  var revRows = aprobados.map(function(l){
+    return '<tr>' +
+      '<td><input type="text" value="'+esc(l.name)+'" data-slid="'+l.id+'" data-field="name"></td>' +
+      '<td style="min-width:170px;">'+spyLinksEditor(l)+'</td>' +
+      '<td><input type="text" value="'+esc(l.niche)+'" data-slid="'+l.id+'" data-field="niche"></td>' +
+      '<td><select data-slid="'+l.id+'" data-field="responsible">'+selOpts(['Jordan','Cami','Meli','Jesús'], l.responsible)+'</select></td>' +
+      '<td><select data-slid="'+l.id+'" data-field="potencial">'+selOpts(['bajo','medio','alto'], l.potencial||'medio', {bajo:'Bajo',medio:'Medio',alto:'Alto'})+'</select></td>' +
+      '<td><input type="text" value="'+esc(l.keywordActivador)+'" data-slid="'+l.id+'" data-field="keywordActivador"></td>' +
+      '<td>'+decisionSpySelect(l)+'</td>' +
+    '</tr>';
+  }).join('');
+  document.getElementById('revisionTable').innerHTML =
+    '<thead><tr><th>Producto</th><th>Link</th><th>Nicho</th><th>Responsable</th><th>Potencial</th><th>Palabra clave / activador</th><th>Decisión</th></tr></thead>' +
+    '<tbody>' + (revRows || '<tr><td colspan="7" class="empty-msg">No hay productos aprobados en espionaje todavía</td></tr>') + '</tbody>';
+
+  var prep = db.products.filter(function(p){ return p.phase === 'preparacion'; });
+  document.getElementById('prepBoardTable').innerHTML = buildBoardTable(prep, { showPrice:true, showMoveButton:true });
+}
+function spyLinksEditor(l){
+  var arr = l.urls && l.urls.length ? l.urls : [''];
+  var items = arr.map(function(u, idx){
+    return '<div class="boardlink-row"><input type="text" placeholder="Link '+(idx+1)+'" value="'+esc(u)+'" data-slid="'+l.id+'" data-field="urls.'+idx+'">' +
+      (arr.length>1 ? '<button class="mini-del" data-action="delSpyUrl" data-slid="'+l.id+'" data-idx="'+idx+'">✕</button>' : '') +
+    '</div>';
+  }).join('');
+  return '<div class="boardlinks-wrap">'+items+'<button class="btn-ghost add-link-btn" data-action="addSpyUrl" data-slid="'+l.id+'">+ link</button></div>';
+}
+function spyStatusSelect(l){
+  return '<select data-slid="'+l.id+'" data-field="status">'+selOpts(['por_revisar','descartado','aprobado'], l.status, {por_revisar:'Por revisar', descartado:'Descartado', aprobado:'Aprobado'})+'</select>';
+}
+function decisionSpySelect(l){
+  return '<select data-action="decideProduct" data-slid="'+l.id+'">'+selOpts(['revisar','aprobado','descartado'], l.decision||'revisar', {revisar:'Revisar',aprobado:'APROBADO',descartado:'DESCARTADO'})+'</select>';
+}
+
+function prepCardHTML(p){
+  return '<div class="prep-card">' +
+    '<div class="head"><h3>'+esc(p.name)+'</h3><button class="btn-purple-out" data-action="moveToTesteo" data-pid="'+p.id+'">MOVER A TESTEO →</button></div>' +
+    '<div class="field-grid">' +
+      field('Nombre','text',p,'name') +
+      field('Nicho','text',p,'niche') +
+      field('Precio','number',p,'price') +
+      currencyField(p) +
+    '</div>' +
+    '<div class="field"><label>Links de referencia del producto</label>'+multiLinksEditor(p,'refLinks')+'</div>' +
+    linkRow('Carpeta de anuncios', p, 'driveLink') +
+    linkRow('Textos de anuncios', p, 'docsLink') +
+    '<div class="field"><label>Frase de activador</label><textarea data-pid="'+p.id+'" data-field="notes">'+esc(p.notes)+'</textarea></div>' +
+  '</div>';
+}
+function currencyField(p){
+  var opts = ['USD','MXN','CLP','PEN','COP','ARS','EUR'];
+  return '<div class="field"><label>Moneda</label><select data-pid="'+p.id+'" data-field="currency">'+selOpts(opts, p.currency||'USD')+'</select></div>';
+}
+function multiLinksEditor(p, arrField){
+  var arr = getDeep(p, arrField) || [];
+  if(arr.length === 0) arr = [''];
+  var items = arr.map(function(url, idx){
+    return '<div class="boardlink-row"><input type="text" placeholder="Link '+(idx+1)+'" value="'+esc(url)+'" data-pid="'+p.id+'" data-field="'+arrField+'.'+idx+'">' +
+      (arr.length>1 ? '<button class="mini-del" data-action="delLinkArr" data-pid="'+p.id+'" data-arr="'+arrField+'" data-idx="'+idx+'">✕</button>' : '') +
+    '</div>';
+  }).join('');
+  return '<div class="boardlinks-wrap">'+items+'<button class="btn-ghost add-link-btn" data-action="addLinkArr" data-pid="'+p.id+'" data-arr="'+arrField+'">+ link</button></div>';
+}
+function field(label, type, p, key, disabled){
+  return '<div class="field"><label>'+label+'</label><input type="'+type+'" value="'+esc(p[key])+'" data-pid="'+p.id+'" data-field="'+key+'"'+(type==='number'?' data-type="number"':'')+(disabled?' disabled':'')+'></div>';
+}
+function selField(label, p, key, opts){
+  return '<div class="field"><label>'+label+'</label><select data-pid="'+p.id+'" data-field="'+key+'">'+selOpts(opts, p[key])+'</select></div>';
+}
+function linkRow(label, p, key){
+  return '<div class="field"><label>'+label+'</label><div class="link-row">' +
+    '<input type="text" value="'+esc(p[key])+'" data-pid="'+p.id+'" data-field="'+key+'">' +
+    '<button class="mini" data-action="openLink" data-val="'+esc(p[key])+'">Abrir</button>' +
+    '<button class="mini" data-action="copyLink" data-val="'+esc(p[key])+'">Copiar</button>' +
+  '</div></div>';
+}
+
+function esc(s){ return (s===undefined||s===null) ? '' : String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function selOpts(opts, current, labels){
+  return opts.map(function(o){
+    var l = labels ? labels[o] : o;
+    return '<option value="'+o+'"'+(o===current?' selected':'')+'>'+l+'</option>';
+  }).join('');
+}
+
+function renderTesteo(){
+  var list = db.products.filter(function(p){ return p.phase === 'testeo'; });
+
+  document.getElementById('adsTable').innerHTML =
+    '<thead><tr><th>Producto</th><th>Precio</th><th>Anuncios</th><th># Anuncios</th><th>Inversión</th><th>Fecha de testeo</th><th>BM</th><th>Cuenta publicitaria</th><th>Sendy</th><th>Frase activadora</th><th>Flujo</th></tr></thead><tbody>' +
+    (list.map(function(p){
+      var inversion = (parseFloat(p.ads.count)||0) * 2;
+      return '<tr>' +
+        '<td><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></td>' +
+        '<td style="min-width:110px;">'+field('','number',p,'price')+currencyField(p)+'</td>' +
+        '<td>'+activoSelect(p, 'ads.activo')+'</td>' +
+        '<td><input type="number" value="'+p.ads.count+'" data-pid="'+p.id+'" data-field="ads.count" data-type="number" style="width:70px;"></td>' +
+        '<td>$'+fmt(inversion)+'</td>' +
+        '<td><input type="date" value="'+esc(p.ads.fechaInicio)+'" data-pid="'+p.id+'" data-field="ads.fechaInicio"></td>' +
+        '<td><input type="text" placeholder="BM" value="'+esc(p.ads.bm)+'" data-pid="'+p.id+'" data-field="ads.bm"></td>' +
+        '<td><input type="text" placeholder="Cuenta publicitaria" value="'+esc(p.ads.cuentaPublicitaria)+'" data-pid="'+p.id+'" data-field="ads.cuentaPublicitaria"></td>' +
+        '<td>'+adsSendyCell(p)+'</td>' +
+        '<td style="min-width:180px;"><textarea placeholder="Frase activadora" data-pid="'+p.id+'" data-field="ads.textoPrincipal" style="min-height:44px;">'+esc(p.ads.textoPrincipal)+'</textarea></td>' +
+        '<td><select data-pid="'+p.id+'" data-field="funnel.testeoEstado">'+selOpts(['pendiente','en_proceso','activo'], p.funnel.testeoEstado, {pendiente:'Pendiente',en_proceso:'En proceso',activo:'Listo'})+'</select></td>' +
+      '</tr>';
+    }).join('') || '<tr><td colspan="11" class="empty-msg">No hay productos en testeo</td></tr>') + '</tbody>';
+}
+function adsSendyCell(p){
+  return '<div class="boardlinks-wrap">' +
+    '<input type="text" placeholder="Correo" value="'+esc(p.ads.sendyCorreo)+'" data-pid="'+p.id+'" data-field="ads.sendyCorreo">' +
+    '<input type="text" placeholder="Contraseña" value="'+esc(p.ads.sendyContrasena)+'" data-pid="'+p.id+'" data-field="ads.sendyContrasena">' +
+    '<input type="text" placeholder="WhatsApp" value="'+esc(p.ads.sendyWhatsapp)+'" data-pid="'+p.id+'" data-field="ads.sendyWhatsapp">' +
+    '<input type="text" placeholder="ID" value="'+esc(p.ads.sendyId)+'" data-pid="'+p.id+'" data-field="ads.sendyId">' +
+  '</div>';
+}
+function statusSelect(p, field){
+  var val = getDeep(p, field);
+  return '<select data-pid="'+p.id+'" data-field="'+field+'">'+selOpts(['pendiente','en_proceso','terminado'], val, {pendiente:'Pendiente',en_proceso:'En proceso',terminado:'Terminado'})+'</select>';
+}
+function activoSelect(p, field){
+  var val = getDeep(p, field) ? 'true' : 'false';
+  return '<select data-pid="'+p.id+'" data-field="'+field+'" data-type="bool">'+selOpts(['true','false'], val, {true:'Activo', false:'Inactivo'})+'</select>';
+}
+function linkInput(p, field, placeholder){
+  return '<input type="text" placeholder="'+(placeholder||'')+'" value="'+esc(getDeep(p,field))+'" data-pid="'+p.id+'" data-field="'+field+'">';
+}
+function colRespSelect(key){
+  return '<select class="colhead-resp-select" data-boardresp="'+key+'">'+selOpts(['Jordan','Jesús','Cami','Meli'], db.boardResp[key])+'</select>';
+}
+function boardLinksCell(p){
+  return multiLinksEditor(p, 'boardLinks');
+}
+function freeTextCell(p, field, placeholder){
+  return '<textarea placeholder="'+esc(placeholder)+'" data-pid="'+p.id+'" data-field="'+field+'" style="min-height:60px;min-width:180px;">'+esc(getDeep(p,field))+'</textarea>';
+}
+function sendyCell(p){
+  return '<div class="boardlinks-wrap">' +
+    '<input type="text" placeholder="Cuenta (ej: Cuenta 1)" value="'+esc(p.sendyAccount.cuenta)+'" data-pid="'+p.id+'" data-field="sendyAccount.cuenta">' +
+    '<input type="text" placeholder="Correo" value="'+esc(p.sendyAccount.correo)+'" data-pid="'+p.id+'" data-field="sendyAccount.correo">' +
+    '<input type="text" placeholder="Contraseña" value="'+esc(p.sendyAccount.contrasena)+'" data-pid="'+p.id+'" data-field="sendyAccount.contrasena">' +
+    '<input type="text" placeholder="Link de acceso a Sendy" value="'+esc(p.sendyAccount.link)+'" data-pid="'+p.id+'" data-field="sendyAccount.link">' +
+  '</div>';
+}
+
+function statusColor(val, ideal){
+  if(!ideal) return 'gray';
+  var ratio = val / ideal;
+  if(ratio <= 1) return 'green';
+  if(ratio <= 1.2) return 'yellow';
+  return 'red';
+}
+function renderOptimizacion(){
+  var list = db.products.filter(function(p){ return p.phase === 'optimizacion'; });
+
+  document.getElementById('optBoardTable').innerHTML = buildOptBoardTable(list);
+
+  document.getElementById('optChecklists').innerHTML = list.map(function(p){
+    var gasto = parseFloat(p.opt.gasto)||0;
+    var facturacion = (parseFloat(p.opt.compras)||0) * 2;
+    var gananciaNeta = facturacion - gasto;
+    var positivo = gananciaNeta > 0;
+    var allChecked = p.checklist.productoDigital && p.checklist.comentariosPositivos && p.checklist.pixelConfigurado && p.checklist.sendyConfigurado && p.checklist.flujoOptimizado;
+    var readyForScale = allChecked && positivo;
+
+    return '<div class="prep-card">' +
+      '<div class="head"><h3><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></h3>' +
+        '<button class="btn-green-out" data-action="approveScale" data-pid="'+p.id+'"'+(readyForScale?'':' style="opacity:.45;"')+'>APROBAR PARA ESCALA</button></div>' +
+      '<div class="section-title" style="margin-top:0;">Checklist de optimización</div>' +
+
+      checkRow(p,'checklist.productoDigital','Producto digital') +
+      '<div class="field"><label>Link de acceso al producto</label><input type="text" data-pid="'+p.id+'" data-field="checklist.productoDigitalLink" value="'+esc(p.checklist.productoDigitalLink)+'"></div>' +
+
+      checkRow(p,'checklist.comentariosPositivos','Comentarios positivos configurados') +
+      checkRow(p,'checklist.pixelConfigurado','Pixel configurado') +
+      checkRow(p,'checklist.upsell','Tiene Upsell') +
+      checkRow(p,'checklist.sendyConfigurado','Upsell configurado en Sendy') +
+      checkRow(p,'checklist.flujoOptimizado','Flujo optimizado') +
+      (!p.checklist.flujoOptimizado ? '<div class="cmd-item warn" style="margin-top:10px;"><div class="txt">⚠ Optimizar flujo y volver a lanzar</div></div>' : '') +
+
+      '<div class="kv" style="margin-top:14px;">' +
+        '<div class="l">Resultado de la optimización</div>' +
+        '<div class="v">'+(positivo ? '<span class="tag green">Positivo ✓ — $'+fmt(gananciaNeta)+'</span>' : '<span class="tag red">Negativo ✕ — $'+fmt(gananciaNeta)+'</span>')+'</div>' +
+      '</div>' +
+    '</div>';
+  }).join('') || '<div class="empty-msg">No hay productos en optimización.</div>';
+}
+function buildOptBoardTable(list){
+  var head = '<thead><tr><th>Producto</th><th>Fecha</th><th>País</th><th>Cuenta publicitaria</th><th>BM</th><th>Gasto</th><th>Mensajes</th><th>Compras</th><th>Facturación</th><th>Ganancia neta</th><th>% Conversión</th><th>Costo/mensaje</th><th>Costo/compra</th><th>ROAS</th></tr></thead>';
+  var body = list.map(function(p){
+    var gasto = parseFloat(p.opt.gasto)||0;
+    var mensajes = parseFloat(p.opt.mensajes)||0;
+    var compras = parseFloat(p.opt.compras)||0;
+    var facturacion = compras * 2;
+    var gananciaNeta = facturacion - gasto;
+    var conv = safeDiv(compras, mensajes) * 100;
+    var cpm = safeDiv(gasto, mensajes);
+    var cpc = safeDiv(gasto, compras);
+    var roas = safeDiv(facturacion, gasto);
+    return '<tr>' +
+      '<td><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></td>' +
+      '<td><input type="date" value="'+esc(p.opt.fecha)+'" data-pid="'+p.id+'" data-field="opt.fecha"></td>' +
+      '<td><input type="text" value="'+esc(p.opt.pais)+'" data-pid="'+p.id+'" data-field="opt.pais"></td>' +
+      '<td><input type="text" value="'+esc(p.ads.cuentaPublicitaria)+'" data-pid="'+p.id+'" data-field="ads.cuentaPublicitaria"></td>' +
+      '<td><input type="text" value="'+esc(p.ads.bm)+'" data-pid="'+p.id+'" data-field="ads.bm"></td>' +
+      '<td><input type="number" value="'+p.opt.gasto+'" data-pid="'+p.id+'" data-field="opt.gasto" data-type="number" style="width:80px;"></td>' +
+      '<td><input type="number" value="'+p.opt.mensajes+'" data-pid="'+p.id+'" data-field="opt.mensajes" data-type="number" style="width:80px;"></td>' +
+      '<td><input type="number" value="'+p.opt.compras+'" data-pid="'+p.id+'" data-field="opt.compras" data-type="number" style="width:80px;"></td>' +
+      '<td>$'+fmt(facturacion)+'</td>' +
+      '<td>$'+fmt(gananciaNeta)+'</td>' +
+      '<td>'+fmtPct(conv)+'%</td>' +
+      '<td>$'+fmt(cpm)+'</td>' +
+      '<td>$'+fmt(cpc)+'</td>' +
+      '<td>'+fmt(roas)+'x</td>' +
+    '</tr>';
+  }).join('');
+  return head + '<tbody>' + (body || '<tr><td colspan="14" class="empty-msg">No hay productos en optimización</td></tr>') + '</tbody>';
+}
+function checkRow(p, field, label){
+  var val = getDeep(p, field);
+  return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+    '<span>'+label+'</span><input type="checkbox" '+(val?'checked':'')+' data-pid="'+p.id+'" data-field="'+field+'"></div>';
+}
+function selFieldFull(label, p, key, opts, labels){
+  return '<div class="field"><label>'+label+'</label><select data-pid="'+p.id+'" data-field="'+key+'">'+selOpts(opts, getDeep(p,key), labels)+'</select></div>';
+}
+
+function renderEscala(){
+  var list = db.products.filter(function(p){ return p.phase === 'escala'; });
+  document.getElementById('scaleList').innerHTML = list.map(function(p){
+
+    var upsellRows = p.scale.upsells.map(function(u, idx){
+      return '<tr>' +
+        '<td><input type="text" value="'+esc(u.nombre)+'" data-pid="'+p.id+'" data-field="scale.upsells.'+idx+'.nombre"></td>' +
+        '<td><input type="number" value="'+u.precio+'" data-pid="'+p.id+'" data-field="scale.upsells.'+idx+'.precio" data-type="number"></td>' +
+        '<td><input type="number" value="'+u.ventas+'" data-pid="'+p.id+'" data-field="scale.upsells.'+idx+'.ventas" data-type="number"></td>' +
+        '<td><input type="number" value="'+u.conversion+'" data-pid="'+p.id+'" data-field="scale.upsells.'+idx+'.conversion" data-type="number"></td>' +
+        '<td><input type="number" value="'+u.facturacion+'" data-pid="'+p.id+'" data-field="scale.upsells.'+idx+'.facturacion" data-type="number"></td>' +
+        '<td><select data-pid="'+p.id+'" data-field="scale.upsells.'+idx+'.estado">'+selOpts(['funcionando','testeando','no_convierte'], u.estado, {funcionando:'Funcionando',testeando:'Testeando',no_convierte:'No convierte'})+'</select></td>' +
+        '<td style="min-width:150px;"><input type="text" placeholder="Link del producto" value="'+esc(u.linkProducto)+'" data-pid="'+p.id+'" data-field="scale.upsells.'+idx+'.linkProducto"></td>' +
+        '<td style="min-width:150px;"><textarea placeholder="Copy del producto" data-pid="'+p.id+'" data-field="scale.upsells.'+idx+'.copyProducto" style="min-height:44px;">'+esc(u.copyProducto)+'</textarea></td>' +
+        '<td><button class="btn-danger-out" data-action="delArrItem" data-pid="'+p.id+'" data-arr="scale.upsells" data-idx="'+idx+'">✕</button></td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div class="prep-card">' +
+      '<div class="head"><h3><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></h3></div>' +
+
+      '<div class="section-title" style="margin-top:0;">Campañas de escala (por día)</div>' +
+      '<div class="table-wrap">'+scaleCampaignsTable(p)+'</div>' +
+      '<button class="btn-ghost" data-action="addScaleCampaign" data-pid="'+p.id+'" style="margin-bottom:14px;">+ Agregar campaña del día</button>' +
+
+      '<div class="section-title">CBO</div>' +
+      '<div class="field-grid">' +
+        selFieldFull('CBO funciona',p,'scale.cbo.funciona',['si','no','testeando'],{si:'Sí',no:'No',testeando:'Testeando'}) +
+        field('Presupuesto CBO','number',p,'scale.cbo.presupuesto') +
+        field('Cantidad de CBO','number',p,'scale.cbo.cantidadCbo') +
+        field('Anuncios activos','number',p,'scale.cbo.anunciosActivos') +
+        field('Anuncios dentro de CBO','number',p,'scale.cbo.anunciosEnCbo') +
+      '</div>' +
+
+      '<div class="section-title">Upsells</div>' +
+      '<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Precio</th><th>Ventas</th><th>Conversión %</th><th>Facturación</th><th>Estado</th><th>Link del producto</th><th>Copy del producto</th><th></th></tr></thead>' +
+      '<tbody>'+(upsellRows||'<tr><td colspan="9" class="empty-msg">Sin upsells registrados</td></tr>')+'</tbody></table></div>' +
+      '<button class="btn-ghost" data-action="addUpsell" data-pid="'+p.id+'" style="margin-bottom:14px;">+ Agregar upsell</button>' +
+
+      '<div class="section-title">Escala de anuncios ganadores</div>' +
+      linkRow('Drive de anuncios ganadores (general)', p, 'scale.driveGanadoresGeneral') +
+      '<div style="margin-top:10px;">'+winningAdsWarehouse(p)+'</div>' +
+      '<button class="btn-ghost" data-action="addWinningAd" data-pid="'+p.id+'" style="margin-top:10px;">+ Agregar anuncio al almacén</button>' +
+    '</div>';
+  }).join('') || '<div class="empty-msg">No hay productos en escala.</div>';
+}
+function scaleCampaignsTable(p){
+  p.scale.campaigns.sort(function(a,b){ return (a.fecha||'').localeCompare(b.fecha||''); });
+  var rows = p.scale.campaigns.map(function(c, idx){
+    var gasto = parseFloat(c.gasto)||0, mensajes = parseFloat(c.mensajes)||0, compras = parseFloat(c.compras)||0;
+    var facturacion = compras*2, gananciaNeta = facturacion-gasto, conv = safeDiv(compras,mensajes)*100;
+    var cpm = safeDiv(gasto,mensajes), cpc = safeDiv(gasto,compras), roas = safeDiv(facturacion,gasto);
+    return '<tr>' +
+      '<td><input type="date" value="'+esc(c.fecha)+'" data-pid="'+p.id+'" data-field="scale.campaigns.'+idx+'.fecha"></td>' +
+      '<td><input type="text" value="'+esc(c.pais)+'" data-pid="'+p.id+'" data-field="scale.campaigns.'+idx+'.pais" style="width:80px;"></td>' +
+      '<td><input type="text" value="'+esc(c.cuentaPublicitaria)+'" data-pid="'+p.id+'" data-field="scale.campaigns.'+idx+'.cuentaPublicitaria" style="width:110px;"></td>' +
+      '<td><input type="text" value="'+esc(c.bm)+'" data-pid="'+p.id+'" data-field="scale.campaigns.'+idx+'.bm" style="width:100px;"></td>' +
+      '<td><input type="number" value="'+c.gasto+'" data-pid="'+p.id+'" data-field="scale.campaigns.'+idx+'.gasto" data-type="number" style="width:70px;"></td>' +
+      '<td><input type="number" value="'+c.mensajes+'" data-pid="'+p.id+'" data-field="scale.campaigns.'+idx+'.mensajes" data-type="number" style="width:70px;"></td>' +
+      '<td><input type="number" value="'+c.compras+'" data-pid="'+p.id+'" data-field="scale.campaigns.'+idx+'.compras" data-type="number" style="width:70px;"></td>' +
+      '<td>$'+fmt(facturacion)+'</td>' +
+      '<td>$'+fmt(gananciaNeta)+'</td>' +
+      '<td>'+fmtPct(conv)+'%</td>' +
+      '<td>$'+fmt(cpm)+'</td>' +
+      '<td>$'+fmt(cpc)+'</td>' +
+      '<td>'+fmt(roas)+'x</td>' +
+      '<td><button class="btn-danger-out" data-action="delArrItem" data-pid="'+p.id+'" data-arr="scale.campaigns" data-idx="'+idx+'">✕</button></td>' +
+    '</tr>';
+  }).join('');
+  return '<table><thead><tr><th>Fecha</th><th>País</th><th>Cuenta publicitaria</th><th>BM</th><th>Gasto</th><th>Mensajes</th><th>Compras</th><th>Facturación</th><th>Ganancia neta</th><th>% Conv.</th><th>Costo/msj</th><th>Costo/compra</th><th>ROAS</th><th></th></tr></thead>' +
+    '<tbody>'+(rows||'<tr><td colspan="14" class="empty-msg">Sin campañas registradas aún</td></tr>')+'</tbody></table>';
+}
+function winningAdsWarehouse(p){
+  var items = p.scale.anunciosGanadores.map(function(a, idx){
+    return '<div class="row-card" style="align-items:flex-start;">' +
+      '<div class="left" style="flex:1;">' +
+        '<div class="field-grid" style="margin-bottom:6px;">' +
+          '<input type="date" value="'+esc(a.fecha)+'" data-pid="'+p.id+'" data-field="scale.anunciosGanadores.'+idx+'.fecha">' +
+          '<input type="text" placeholder="Nombre del anuncio" value="'+esc(a.nombre)+'" data-pid="'+p.id+'" data-field="scale.anunciosGanadores.'+idx+'.nombre">' +
+        '</div>' +
+        '<input type="text" placeholder="Link del video" value="'+esc(a.linkVideo)+'" data-pid="'+p.id+'" data-field="scale.anunciosGanadores.'+idx+'.linkVideo" style="margin-bottom:6px;">' +
+        '<input type="text" placeholder="Link Drive (opcional)" value="'+esc(a.linkDrive)+'" data-pid="'+p.id+'" data-field="scale.anunciosGanadores.'+idx+'.linkDrive">' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">' +
+        (a.validado ? '<span class="tag green">Validado ✓</span>' : '<button class="btn-purple-out" data-action="validateAd" data-pid="'+p.id+'" data-idx="'+idx+'">Validar anuncio</button>') +
+        '<button class="btn-danger-out" data-action="delArrItem" data-pid="'+p.id+'" data-arr="scale.anunciosGanadores" data-idx="'+idx+'">✕</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  return items || '<div class="empty-msg">Todavía no hay anuncios en el almacén de este producto.</div>';
+}
+function resumenBlock(p, key, label, profit){
+  return '<div class="kv">' +
+    '<div class="l">'+label+'</div>' +
+    '<div class="field-grid" style="margin:6px 0;">' +
+      '<input type="number" placeholder="Gasto" value="'+p.scale.resumen[key].gasto+'" data-pid="'+p.id+'" data-field="scale.resumen.'+key+'.gasto" data-type="number">' +
+      '<input type="number" placeholder="Facturación" value="'+p.scale.resumen[key].facturacion+'" data-pid="'+p.id+'" data-field="scale.resumen.'+key+'.facturacion" data-type="number">' +
+    '</div>' +
+    '<div class="v">Profit: $'+fmt(profit)+'</div>' +
+  '</div>';
+}
+
+var BOARD_VIEWS = [
+  ['todos','Todos'], ['preparacion','Pre-Testeo'], ['testeo','Testeo'],
+  ['optimizacion','Optimización'], ['escala','Escala'], ['archivado','Archivados']
+];
+function renderBoardTabs(){
+  document.getElementById('boardViewTabs').innerHTML = BOARD_VIEWS.map(function(v){
+    return '<button class="view-tab'+(db.ui.boardView===v[0]?' active':'')+'" data-action="setBoardView" data-val="'+v[0]+'">'+v[1]+'</button>';
+  }).join('');
+}
+function renderBoardCountries(){
+  var countries = {};
+  db.products.forEach(function(p){ if(p.country) countries[p.country]=true; });
+  var sel = document.getElementById('boardCountry');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="todos">País: todos</option>' + Object.keys(countries).map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  sel.value = cur || 'todos';
+}
+function renderBoard(){
+  renderBoardTabs();
+  renderBoardCountries();
+  var f = db.ui.boardFilters;
+  document.getElementById('boardSearch').value = f.search;
+  document.getElementById('boardStatus').value = f.status;
+  document.getElementById('boardResp').value = f.responsible;
+  document.getElementById('boardCountry').value = f.country;
+
+  var list = db.products.filter(function(p){
+    if(db.ui.boardView !== 'todos' && p.phase !== db.ui.boardView) return false;
+    if(db.ui.boardView === 'archivado' && p.phase !== 'archivado' && p.phase !== 'test_fallido') return false;
+    if(f.search && p.name.toLowerCase().indexOf(f.search.toLowerCase())===-1) return false;
+    if(f.responsible!=='todos' && p.responsible!==f.responsible && p.ads.responsible!==f.responsible && p.funnel.responsible!==f.responsible) return false;
+    if(f.country!=='todos' && p.country!==f.country) return false;
+    if(f.status!=='todos'){
+      var match = p.ads.status===f.status || p.funnel.status===f.status;
+      if(!match) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('boardTable').innerHTML = buildBoardTable(list, {});
+}
+function buildBoardTable(list, opts){
+  opts = opts || {};
+  var cols = [
+    { key:'links', label:'LINKS', pct: pct(list, function(p){return p.boardLinks.some(function(u){return !!u;});}) },
+    { key:'ads', label:'ANUNCIOS MODELADOS', pct: pct(list, function(p){return p.ads.status==='terminado';}) },
+    { key:'funnel', label:'FLUJO EN SENDY', pct: pct(list, function(p){return p.funnel.status==='terminado';}) },
+    { key:'texto', label:'TEXTO DE LOS ANUNCIOS', pct: pct(list, function(p){return p.ads.textoStatus==='terminado';}) },
+    { key:'campanas', label:'LANZAMIENTO DE CAMPAÑAS', pct: pct(list, function(p){return p.campaignLaunchStatus==='terminado';}) },
+    { key:'linkAds', label:'LINK ANUNCIOS', pct: pct(list, function(p){return !!p.ads.driveLink;}) },
+    { key:'linkCopy', label:'LINK COPY', pct: pct(list, function(p){return !!p.ads.copyLink;}) },
+    { key:'activador', label:'ACTIVADOR DE FLUJOS', pct: pct(list, function(p){return !!p.activadorFlujos;}) },
+    { key:'sendy', label:'CUENTA DE SENDY', pct: pct(list, function(p){return !!p.sendyAccount.cuenta;}) }
+  ];
+
+  var priceTh = opts.showPrice ? '<th><div class="colhead-resp" style="background:none;padding:0;margin-bottom:6px;color:var(--text2);">PRECIO</div></th>' : '';
+  var moveTh = opts.showMoveButton ? '<th></th>' : '';
+  var head = '<thead><tr><th>#</th><th>PRODUCTO</th>' + priceTh + cols.map(function(c){
+    return '<th><div class="colhead-resp" style="background:none;padding:0;margin-bottom:6px;color:var(--text2);">'+c.label+'</div>' +
+      colRespSelect(c.key) +
+      '<div class="progress-track"><div class="progress-fill" style="width:'+c.pct+'%;"></div></div><div class="colhead-pct">'+c.pct+'%</div></th>';
+  }).join('') + moveTh + '</tr></thead>';
+
+  var body = list.map(function(p, idx){
+    var priceTd = opts.showPrice ? '<td style="min-width:110px;">'+field('','number',p,'price')+currencyField(p)+'</td>' : '';
+    var moveTd = opts.showMoveButton ? '<td><button class="btn-purple-out" data-action="moveToTesteo" data-pid="'+p.id+'">MOVER A TESTEO →</button></td>' : '';
+    return '<tr>' +
+      '<td>'+(idx+1)+'</td>' +
+      '<td><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span><br><span class="tag gray" style="margin-top:4px;">'+phaseLabel(p.phase)+'</span></td>' +
+      priceTd +
+      '<td>'+boardLinksCell(p)+'</td>' +
+      '<td>'+statusSelect(p, 'ads.status')+'</td>' +
+      '<td>'+statusSelect(p, 'funnel.status')+'</td>' +
+      '<td>'+statusSelect(p, 'ads.textoStatus')+'</td>' +
+      '<td>'+statusSelect(p, 'campaignLaunchStatus')+'</td>' +
+      '<td style="min-width:150px;">'+linkInput(p,'ads.driveLink','link anuncios')+'</td>' +
+      '<td style="min-width:150px;">'+linkInput(p,'ads.copyLink','link copy')+'</td>' +
+      '<td>'+freeTextCell(p, 'activadorFlujos', 'Frases / palabra de activación...')+'</td>' +
+      '<td>'+sendyCell(p)+'</td>' +
+      moveTd +
+    '</tr>';
+  }).join('');
+
+  var colCount = 2 + cols.length + (opts.showPrice ? 1 : 0) + (opts.showMoveButton ? 1 : 0);
+  return head + '<tbody>' + (body || '<tr><td colspan="'+colCount+'" class="empty-msg">Sin resultados con estos filtros</td></tr>') + '</tbody>';
+}
+function pct(list, fn){ if(!list.length) return 0; return Math.round(list.filter(fn).length/list.length*100); }
+function boardTag(status){
+  if(status==='terminado') return '<span class="tag green"><span class="dot"></span>TERMINADO</span>';
+  if(status==='en_proceso') return '<span class="tag yellow"><span class="dot"></span>EN PROCESO</span>';
+  return '<span class="tag gray"><span class="dot"></span>PENDIENTE</span>';
+}
+function decisionTag(d){
+  if(d==='aprobado') return '<span class="tag green">APROBADO</span>';
+  if(d==='desaprobado') return '<span class="tag red">DESAPROBADO</span>';
+  if(d==='observacion') return '<span class="tag yellow">OBSERVACIÓN</span>';
+  return '<span class="tag gray">PENDIENTE</span>';
+}
+function phaseLabel(phase){
+  return { preparacion:'Pre-Testeo', testeo:'Testeo', optimizacion:'Optimización', escala:'Escala', test_fallido:'Test fallido', archivado:'Archivado' }[phase] || phase;
+}
+
+function renderProductosList(){
+  document.getElementById('productosList').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Fase</th><th>País</th><th>Responsable</th><th>Keyword</th></tr></thead><tbody>' +
+    db.products.map(function(p){
+      return '<tr><td><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></td><td>'+phaseLabel(p.phase)+'</td><td>'+esc(p.country)+'</td><td>'+esc(p.responsible)+'</td><td>'+esc(p.keyword)+'</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+function renderCampanasList(){
+  var rows = [];
+  db.products.forEach(function(p){
+    if(p.phase === 'optimizacion'){
+      var fact = (parseFloat(p.opt.compras)||0)*2;
+      rows.push('<tr><td>'+esc(p.name)+' (optimización)</td><td>'+esc(p.opt.fecha)+'</td><td>'+esc(p.opt.pais)+'</td><td>Optimización</td><td>$'+fmt(p.opt.gasto)+'</td><td>$'+fmt(fact)+'</td></tr>');
+    }
+    p.scale.campaigns.forEach(function(c){
+      rows.push('<tr><td>'+esc(p.name)+' (escala)</td><td>'+esc(c.fecha)+'</td><td>'+esc(c.pais)+'</td><td>Escala</td><td>$'+fmt(c.gasto)+'</td><td>$'+fmt((parseFloat(c.compras)||0)*2)+'</td></tr>');
+    });
+  });
+  document.getElementById('campanasList').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Fecha</th><th>País</th><th>Campaña</th><th>Gasto</th><th>Facturación</th></tr></thead><tbody>' + (rows.join('')||'<tr><td colspan="6" class="empty-msg">Sin campañas registradas</td></tr>') + '</tbody></table></div>';
+}
+function renderFlujosList(){
+  document.getElementById('flujosList').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Palabra clave</th><th>Estado flujo</th><th>Link</th></tr></thead><tbody>' +
+    db.products.map(function(p){ return '<tr><td>'+esc(p.name)+'</td><td>'+esc(p.keyword)+'</td><td>'+boardTag(p.funnel.status)+'</td><td>'+esc(p.funnel.linkFlujo)+'</td></tr>'; }).join('') + '</tbody></table></div>';
+}
+function renderAnunciosList(){
+  var winning = [];
+  db.products.forEach(function(p){ p.scale.anunciosGanadores.forEach(function(a){ winning.push('<tr><td>'+esc(p.name)+'</td><td>'+esc(a.nombre)+'</td><td>'+esc(a.fecha)+'</td><td>'+(a.validado?'<span class="tag green">Validado</span>':'<span class="tag gray">Pendiente</span>')+'</td></tr>'); }); });
+  document.getElementById('anunciosList').innerHTML =
+    '<div class="section-title" style="margin-top:0;">En testeo</div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Estado</th><th># Anuncios</th></tr></thead><tbody>' +
+    db.products.filter(function(p){return p.phase==='testeo';}).map(function(p){ return '<tr><td>'+esc(p.name)+'</td><td>'+boardTag(p.ads.status)+'</td><td>'+p.ads.count+'</td></tr>'; }).join('') +
+    '</tbody></table></div>' +
+    '<div class="section-title">Almacén de anuncios ganadores</div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Nombre</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>' +
+    (winning.join('')||'<tr><td colspan="4" class="empty-msg">Sin anuncios ganadores aún</td></tr>') + '</tbody></table></div>';
+}
+function renderAnaliticas(){
+  var fin = totalFinance();
+  document.getElementById('analiticasBody').innerHTML = '<div class="cards-grid">' +
+    '<div class="card"><div class="val">$'+fmt(fin.gasto)+'</div><div class="lbl">Gasto total</div></div>' +
+    '<div class="card accent-green"><div class="val">$'+fmt(fin.fact)+'</div><div class="lbl">Facturación total</div></div>' +
+    '<div class="card '+(fin.profit>=0?'accent-green':'accent-red')+'"><div class="val">$'+fmt(fin.profit)+'</div><div class="lbl">Profit total</div></div>' +
+    '<div class="card accent-purple"><div class="val">'+fmt(fin.roas)+'x</div><div class="lbl">ROAS promedio</div></div>' +
+  '</div>';
+}
+function renderHistorial(){
+  document.getElementById('histList').innerHTML = db.history.map(function(h){
+    return '<div class="hist-item"><span class="u">'+esc(h.user)+'</span><span>'+esc(h.action)+'</span><span class="t">'+h.date+'</span></div>';
+  }).join('') || '<div class="empty-msg">Sin actividad registrada todavía.</div>';
+}
+
+var FICHA_TABS = ['Resumen','Pre-Testeo','Anuncios','Flujo','Campañas','Conversión','Upsells','Escala','Archivos','Historial'];
+var fichaActive = { pid:null, tab:'Resumen' };
+
+function openFicha(pid){
+  fichaActive = { pid:pid, tab:'Resumen' };
+  document.getElementById('fichaModalBg').classList.add('show');
+  renderFicha();
+}
+function renderFicha(){
+  var p = findProduct(fichaActive.pid);
+  if(!p) return;
+  document.getElementById('fichaTitle').textContent = p.name + ' · ' + phaseLabel(p.phase);
+  document.getElementById('fichaTabs').innerHTML = FICHA_TABS.map(function(t){
+    return '<button class="ficha-tab'+(fichaActive.tab===t?' active':'')+'" data-action="fichaTab" data-val="'+t+'">'+t+'</button>';
+  }).join('');
+
+  var body = '';
+  var optGasto = parseFloat(p.opt.gasto)||0;
+  var optCompras = parseFloat(p.opt.compras)||0;
+  var optMensajes = parseFloat(p.opt.mensajes)||0;
+  var optFacturacion = optCompras*2;
+  var conv = safeDiv(optCompras, optMensajes)*100;
+
+  if(fichaActive.tab === 'Resumen'){
+    body = '<div class="kv-grid">' +
+      kv('Fase actual', phaseLabel(p.phase)) + kv('Responsable', p.responsible) +
+      kv('País', p.country) + kv('Palabra clave', p.keyword || '—') +
+      kv('Gasto (optimización)', '$'+fmt(optGasto)) + kv('Facturación (optimización)', '$'+fmt(optFacturacion)) +
+      kv('Ganancia neta', '$'+fmt(optFacturacion-optGasto)) + kv('ROAS', fmt(safeDiv(optFacturacion,optGasto))+'x') +
+      kv('Mensajes', optMensajes) + kv('Compras', optCompras) +
+      kv('Conversión', fmtPct(conv)+'%') +
+    '</div>' +
+    '<div class="field" style="margin-top:16px;"><label>Notas</label><textarea data-pid="'+p.id+'" data-field="notes">'+esc(p.notes)+'</textarea></div>' +
+    '<button class="btn-danger-out" style="margin-top:10px;" data-action="archiveProduct" data-pid="'+p.id+'">Archivar producto</button>';
+  }
+  if(fichaActive.tab === 'Pre-Testeo'){
+    body = '<div class="kv-grid">' + kv('Link original', p.originalLink||'—') + kv('Link página', p.pageLink||'—') + kv('Drive', p.driveLink||'—') + kv('Docs', p.docsLink||'—') + kv('Precio', (p.price||'—')+' '+p.currency) + kv('Nicho', p.niche||'—') + '</div>';
+  }
+  if(fichaActive.tab === 'Anuncios'){
+    body = '<div class="kv-grid">' + kv('Estado', p.ads.status) + kv('Responsable', p.ads.responsible) + kv('# Anuncios', p.ads.count) + kv('Drive anuncios', p.ads.driveLink||'—') + kv('Hook', p.ads.hook||'—') + kv('CTA', p.ads.cta||'—') + '</div><div class="kv" style="margin-top:10px;"><div class="l">Texto principal</div><div class="v">'+esc(p.ads.textoPrincipal||'—')+'</div></div>';
+  }
+  if(fichaActive.tab === 'Flujo'){
+    body = '<div class="kv-grid">' + kv('Estado', p.funnel.status) + kv('Responsable', p.funnel.responsible) + kv('País', p.funnel.country||'—') + kv('Link flujo', p.funnel.linkFlujo||'—') + kv('Drive', p.funnel.linkDrive||'—') + kv('Palabra clave', p.keyword||'—') + '</div>';
+  }
+  if(fichaActive.tab === 'Campañas'){
+    body = '<div class="kv-grid">' + kv('Fecha', p.opt.fecha||'—') + kv('País', p.opt.pais||'—') + kv('Gasto', '$'+fmt(optGasto)) + kv('Facturación', '$'+fmt(optFacturacion)) + kv('Mensajes', optMensajes) + kv('Compras', optCompras) + '</div>';
+  }
+  if(fichaActive.tab === 'Conversión'){
+    body = '<div class="kv-grid">' + kv('Mensajes', optMensajes) + kv('Compras', optCompras) + kv('Conversión', fmtPct(conv)+'%') + kv('Producto digital', p.checklist.productoDigital?'Sí':'No') + kv('Comentarios positivos', p.checklist.comentariosPositivos?'Sí':'No') + kv('Sendy configurado', p.checklist.sendyConfigurado?'Sí':'No') + '</div>';
+  }
+  if(fichaActive.tab === 'Upsells'){
+    body = p.scale.upsells.map(function(u){ return '<div class="kv-grid" style="margin-bottom:10px;">'+kv('Nombre',u.nombre)+kv('Precio','$'+fmt(u.precio))+kv('Ventas',u.ventas)+kv('Facturación','$'+fmt(u.facturacion))+kv('Estado',u.estado)+kv('Link del producto',u.linkProducto||'—')+'</div>'; }).join('') || '<div class="empty-msg">Sin upsells registrados.</div>';
+  }
+  if(fichaActive.tab === 'Escala'){
+    body = '<div class="kv-grid">' + kv('CBO funciona', p.scale.cbo.funciona) + kv('Presupuesto CBO', '$'+fmt(p.scale.cbo.presupuesto)) + kv('Anuncios activos', p.scale.cbo.anunciosActivos) + kv('Anuncios en CBO', p.scale.cbo.anunciosEnCbo) + kv('Anuncios validados', p.scale.anunciosGanadores.filter(function(a){return a.validado;}).length+' / '+p.scale.anunciosGanadores.length) + '</div>';
+  }
+  if(fichaActive.tab === 'Archivos'){
+    body = '<div class="kv-grid">' + kv('Drive principal', p.driveLink||'—') + kv('Docs', p.docsLink||'—') + kv('Drive anuncios', p.ads.driveLink||'—') + kv('Drive flujo', p.funnel.linkDrive||'—') + kv('Drive ganadores', p.scale.driveGanadoresGeneral||'—') + '</div>';
+  }
+  if(fichaActive.tab === 'Historial'){
+    var hist = db.history.filter(function(h){ return h.action.indexOf(p.name) > -1; });
+    body = hist.map(function(h){ return '<div class="hist-item"><span class="u">'+esc(h.user)+'</span><span>'+esc(h.action)+'</span><span class="t">'+h.date+'</span></div>'; }).join('') || '<div class="empty-msg">Sin historial para este producto todavía.</div>';
+  }
+
+  document.getElementById('fichaBody').innerHTML = body;
+}
+function kv(label, val){ return '<div class="kv"><div class="l">'+label+'</div><div class="v">'+esc(val)+'</div></div>'; }
+
+function renderApp(){
+  switchView(db.ui.activeNav);
+  renderDashboard();
+  renderComandos();
+  renderSpy();
+  renderTesteo();
+  renderOptimizacion();
+  renderEscala();
+  renderBoard();
+  renderHistorial();
+  renderProductosList();
+  renderCampanasList();
+  renderFlujosList();
+  renderAnunciosList();
+  renderAnaliticas();
+  renderWeekBoard();
+  renderTutorialCourse();
+}
+function taskTypeById(id){ return TASK_CATALOG.find(function(t){ return t.id === id; }); }
+function productLabel(pid){
+  if(!pid) return '';
+  var p = findProduct(pid);
+  return p ? p.name + ' · ' + phaseLabel(p.phase) : '';
+}
+function renderWeekBoard(){
+  var filterPerson = document.getElementById('taskPersonFilter').value;
+  var wrap = document.getElementById('weekBoard');
+  wrap.innerHTML = '';
+  for(var d=0; d<7; d++){
+    var tasksToday = db.weekTasks.filter(function(t){ return t.day === d && (filterPerson==='todos' || t.assignee===filterPerson); });
+    var section = document.createElement('div');
+    section.className = 'day-section';
+
+    var byPerson = {};
+    tasksToday.forEach(function(t){ (byPerson[t.assignee] = byPerson[t.assignee] || []).push(t); });
+    var folders = Object.keys(byPerson).map(function(person){
+      var tasks = byPerson[person];
+      return '<div class="person-folder">' +
+        '<div class="person-folder-head"><span class="avatar">'+person.slice(0,2).toUpperCase()+'</span><h4>'+esc(person)+'</h4><span class="cnt">'+tasks.length+' tarea(s)</span></div>' +
+        '<div class="person-tasks-grid">'+tasks.map(function(t){ return taskCardHTML(t); }).join('')+'</div>' +
+      '</div>';
+    }).join('');
+
+    section.innerHTML =
+      '<div class="day-head"><h3>'+DAY_LABELS[d]+'</h3><span class="cnt">'+tasksToday.length+' tarea(s)</span></div>' +
+      (folders || '<div class="empty-msg">Sin tareas asignadas este día</div>');
+    wrap.appendChild(section);
+  }
+}
+function taskCardHTML(t){
+  var type = taskTypeById(t.taskTypeId);
+  if(!type) return '';
+
+  var linksBlock =
+    '<label>Links</label>' +
+    '<div class="boardlinks-wrap">' +
+      t.links.map(function(u, idx){
+        return '<div class="boardlink-row"><input type="text" placeholder="'+esc(type.linkLabel||'Link')+' '+(idx+1)+'" value="'+esc(u)+'" data-wt="'+t.id+'" data-field="links.'+idx+'">' +
+          (t.links.length>1 ? '<button class="mini-del" data-action="delTaskLink" data-wtid="'+t.id+'" data-idx="'+idx+'">✕</button>' : '') +
+        '</div>';
+      }).join('') +
+      '<button class="btn-ghost add-link-btn" data-action="addTaskLink" data-wtid="'+t.id+'">+ link</button>' +
+    '</div>';
+
+  var statusBlock =
+    '<label>Estado</label>' +
+    '<select data-wt="'+t.id+'" data-field="status">'+selOpts(['pendiente','en_proceso','terminado'], t.status, {pendiente:'Pendiente',en_proceso:'En proceso',terminado:'Terminado'})+'</select>';
+
+  var fechaBlock =
+    '<label>Fecha</label>' +
+    '<input type="date" value="'+esc(t.fecha)+'" data-wt="'+t.id+'" data-field="fecha">';
+
+  var roundsBlock = '';
+  if(type.fieldType === 'rounds3'){
+    roundsBlock = '<label>Revisadas del día</label><div class="round-row">' +
+      roundPill(t,'r1','1ª') + roundPill(t,'r2','2ª') + roundPill(t,'r3','3ª') +
+    '</div>';
+  }
+
+  var done = t.status === 'terminado';
+  return '<div class="task-card'+(done?' done':'')+'">' +
+    '<div class="ttype">'+esc(type.label)+(done?' <span class="tag green">✓ Terminado</span>':'')+'</div>' +
+    '<div class="tmeta"><span class="avatar" style="margin:0;">'+t.assignee.slice(0,2).toUpperCase()+'</span><span>'+esc(t.assignee)+'</span><span>⏱ '+esc(t.tiempoEstimado||'—')+'</span></div>' +
+    (t.producto ? '<div class="tprod">🔗 '+esc(productLabel(t.producto))+'</div>' : '') +
+    fechaBlock +
+    statusBlock +
+    linksBlock +
+    roundsBlock +
+    '<button class="btn-danger-out tdel" data-action="delWeekTask" data-wtid="'+t.id+'">✕ Quitar tarea</button>' +
+  '</div>';
+}
+function roundPill(t, key, label){
+  var done = t[key] === 'terminado';
+  return '<span class="round-pill'+(done?' done':'')+'" data-action="toggleRound" data-wtid="'+t.id+'" data-round="'+key+'">'+label+(done?' ✓':'')+'</span>';
+}
+function getTutorialContent(tutId){
+  if(!db.tutorialContent[tutId]){
+    db.tutorialContent[tutId] = { htmlBlocks: [], materiales: [''] };
+  }
+  return db.tutorialContent[tutId];
+}
+function escAttr(s){ return (s===undefined||s===null) ? '' : String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function renderTutorialCourse(){
+  var wrap = document.getElementById('tutorialCourse');
+  wrap.innerHTML = TUTORIAL_CATALOG.map(function(t, idx){
+    var content = getTutorialContent(t.id);
+
+    var blocksHtml = content.htmlBlocks.map(function(b, bidx){
+      return '<div class="html-block">' +
+        '<div class="field"><label>Nombre del archivo</label><input type="text" placeholder="Ej: Guion de la clase" value="'+esc(b.nombre)+'" data-tut="'+t.id+'" data-field="htmlBlocks.'+bidx+'.nombre"></div>' +
+        '<div class="field"><label>Código HTML de este archivo</label><textarea data-tut="'+t.id+'" data-field="htmlBlocks.'+bidx+'.html" placeholder="Pega aquí el HTML (puede ser un embed de video, texto con formato, etc.)">'+esc(b.html)+'</textarea></div>' +
+        (b.html ? '<div class="html-preview"><iframe sandbox="allow-scripts allow-same-origin" srcdoc="'+escAttr(b.html)+'"></iframe></div>' : '') +
+        '<button class="btn-danger-out" data-action="delHtmlBlock" data-tut="'+t.id+'" data-idx="'+bidx+'">✕ Quitar este archivo</button>' +
+      '</div>';
+    }).join('');
+
+    var materialesHtml = content.materiales.map(function(url, midx){
+      return '<div class="boardlink-row"><input type="text" placeholder="Link de Drive del material" value="'+esc(url)+'" data-tut="'+t.id+'" data-field="materiales.'+midx+'">' +
+        (content.materiales.length>1 ? '<button class="mini-del" data-action="delTutMaterial" data-tut="'+t.id+'" data-idx="'+midx+'">✕</button>' : '') +
+      '</div>';
+    }).join('');
+
+    return '<div class="prep-card">' +
+      '<div class="head"><h3>Clase '+(idx+1)+' — '+esc(t.label)+'</h3>' +
+        '<button class="btn-purple-out" data-action="addHtmlBlock" data-tut="'+t.id+'">+ Agregar archivo HTML</button></div>' +
+
+      (blocksHtml || '<div class="empty-msg">Todavía no hay archivos HTML para esta clase.</div>') +
+
+      '<div class="section-title" style="margin-top:16px;">Materiales de esta clase</div>' +
+      '<div class="boardlinks-wrap">' + materialesHtml +
+        '<button class="btn-ghost add-link-btn" data-action="addTutMaterial" data-tut="'+t.id+'">+ link de material</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+
+document.addEventListener('click', function(e){
+  var el = e.target.closest('[data-action]');
+  if(!el) return;
+  var action = el.getAttribute('data-action');
+  var pid = el.getAttribute('data-pid');
+
+  if(action === 'openFicha'){ openFicha(pid); }
+  if(action === 'fichaTab'){ fichaActive.tab = el.getAttribute('data-val'); renderFicha(); }
+
+  if(action === 'openLink'){ var v = el.getAttribute('data-val'); if(v) window.open(v.indexOf('http')===0?v:'https://'+v, '_blank'); }
+  if(action === 'copyLink'){ var v2 = el.getAttribute('data-val'); if(v2){ navigator.clipboard && navigator.clipboard.writeText(v2); toast('Link copiado'); } }
+
+  if(action === 'setBoardView'){ db.ui.boardView = el.getAttribute('data-val'); saveDB(); renderBoard(); }
+
+  if(action === 'delSpy'){ var slid = el.getAttribute('data-slid'); db.spyLinks = db.spyLinks.filter(function(x){return x.id!==slid;}); saveDB(); renderApp(); }
+  if(action === 'addSpyUrl'){
+    var slAdd = db.spyLinks.find(function(x){return x.id===el.getAttribute('data-slid');});
+    slAdd.urls.push('');
+    saveDB(); renderApp();
+  }
+  if(action === 'delSpyUrl'){
+    var slDel = db.spyLinks.find(function(x){return x.id===el.getAttribute('data-slid');});
+    slDel.urls.splice(parseInt(el.getAttribute('data-idx'),10),1);
+    if(slDel.urls.length===0) slDel.urls.push('');
+    saveDB(); renderApp();
+  }
+
+  if(action === 'openAddLink'){ document.getElementById('addLinkModalBg').classList.add('show'); }
+  if(action === 'closeAddLink'){ document.getElementById('addLinkModalBg').classList.remove('show'); }
+  if(action === 'saveAddLink'){
+    if(db.spyLinks.length >= 40){ toast('Ya llegaste al máximo de 40 links'); return; }
+    db.spyLinks.push({
+      id: uid('sl'), urls: [document.getElementById('al_link').value], name: document.getElementById('al_name').value,
+      niche: document.getElementById('al_niche').value,
+      responsible: document.getElementById('al_resp').value, date: today(), notes: document.getElementById('al_notes').value,
+      status:'por_revisar', potencial:'medio', keywordActivador:'', decision:'revisar', productId:null
+    });
+    saveDB(); document.getElementById('addLinkModalBg').classList.remove('show'); renderApp(); toast('Link agregado');
+  }
+
+  if(action === 'openPasteLinks'){ document.getElementById('pasteLinksModalBg').classList.add('show'); }
+  if(action === 'closePasteLinks'){ document.getElementById('pasteLinksModalBg').classList.remove('show'); }
+  if(action === 'savePasteLinks'){
+    var lines = document.getElementById('pl_bulk').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+    var space = 40 - db.spyLinks.length;
+    lines.slice(0, space).forEach(function(u){
+      db.spyLinks.push({ id: uid('sl'), urls:[u], name:'', niche:'', responsible:'Jordan', date:today(), notes:'', status:'por_revisar', potencial:'medio', keywordActivador:'', decision:'revisar', productId:null });
+    });
+    saveDB(); document.getElementById('pasteLinksModalBg').classList.remove('show'); renderApp();
+    toast(Math.min(lines.length,space)+' links agregados');
+  }
+
+  if(action === 'openNewProduct'){ document.getElementById('newProductModalBg').classList.add('show'); }
+  if(action === 'closeNewProduct'){ document.getElementById('newProductModalBg').classList.remove('show'); }
+  if(action === 'saveNewProduct'){
+    var name = document.getElementById('np_name').value.trim();
+    if(!name){ toast('Ponle un nombre al producto'); return; }
+    var np = emptyProduct(name, document.getElementById('np_country').value, document.getElementById('np_niche').value, document.getElementById('np_resp').value);
+    db.products.push(np);
+    log('Producto creado', name);
+    saveDB(); document.getElementById('newProductModalBg').classList.remove('show'); renderApp(); toast('Producto creado');
+  }
+
+  if(action === 'moveToTesteo'){ var p1 = findProduct(pid); p1.phase='testeo'; log('Producto movido de fase a Testeo', p1.name); saveDB(); renderApp(); toast(p1.name+' movido a Testeo'); }
+  if(action === 'moveToOptimizacion'){ var p2 = findProduct(pid); p2.phase='optimizacion'; log('Producto movido de fase a Optimización', p2.name); saveDB(); renderApp(); toast(p2.name+' movido a Optimización'); }
+  if(action === 'approveScale'){
+    var p3 = findProduct(pid);
+    var gastoP = parseFloat(p3.opt.gasto)||0;
+    var factP = (parseFloat(p3.opt.compras)||0)*2;
+    var okChecklist = p3.checklist.productoDigital && p3.checklist.comentariosPositivos && p3.checklist.pixelConfigurado && p3.checklist.sendyConfigurado && p3.checklist.flujoOptimizado;
+    if(!okChecklist){ toast('Completa el checklist de optimización antes de aprobar'); return; }
+    if((factP - gastoP) <= 0){ toast('El producto todavía no da ganancia neta positiva'); return; }
+    p3.phase='escala'; log('Producto aprobado para escala', p3.name); saveDB(); renderApp(); toast(p3.name+' aprobado para Escala 🚀');
+  }
+  if(action === 'archiveProduct'){ var p4 = findProduct(pid); p4.phase='archivado'; log('Producto archivado', p4.name); saveDB(); document.getElementById('fichaModalBg').classList.remove('show'); renderApp(); toast('Producto archivado'); }
+
+  if(action === 'addScaleCampaign'){ var p6 = findProduct(pid); p6.scale.campaigns.push({id:uid('sc'),fecha:today(),pais:p6.country,cuentaPublicitaria:'',bm:'',gasto:0,mensajes:0,compras:0}); saveDB(); renderApp(); }
+  if(action === 'addUpsell'){ var p8 = findProduct(pid); p8.scale.upsells.push({id:uid('up'),nombre:'',precio:0,ventas:0,conversion:0,facturacion:0,estado:'testeando',linkProducto:'',copyProducto:''}); saveDB(); renderApp(); }
+  if(action === 'addWinningAd'){ var p9 = findProduct(pid); p9.scale.anunciosGanadores.push({id:uid('ag'),fecha:today(),nombre:'',linkVideo:'',linkDrive:'',validado:false,tarea:{responsable:'Cami',fecha:today(),prioridad:'media',estado:'pendiente'}}); saveDB(); renderApp(); }
+  if(action === 'validateAd'){
+    var p10 = findProduct(pid);
+    var adIdx = parseInt(el.getAttribute('data-idx'),10);
+    var ad = p10.scale.anunciosGanadores[adIdx];
+    ad.validado = true;
+    ad.tarea.estado = 'pendiente';
+    log('Anuncio validado — tarea creada', p10.name);
+    saveDB(); renderApp(); toast('Anuncio validado, se creó su tarea de modelado');
+  }
+
+  if(action === 'delArrItem'){
+    var pDel = findProduct(pid);
+    var arrPath = el.getAttribute('data-arr');
+    var idx = parseInt(el.getAttribute('data-idx'),10);
+    var arr = getDeep(pDel, arrPath);
+    arr.splice(idx,1);
+    saveDB(); renderApp();
+  }
+
+  if(action === 'addLinkArr'){
+    var pAL = findProduct(pid);
+    var arrF = el.getAttribute('data-arr');
+    getDeep(pAL, arrF).push('');
+    saveDB(); renderApp();
+  }
+  if(action === 'delLinkArr'){
+    var pDL = findProduct(pid);
+    var arrF2 = el.getAttribute('data-arr');
+    var idxDL = parseInt(el.getAttribute('data-idx'),10);
+    var arrRef = getDeep(pDL, arrF2);
+    arrRef.splice(idxDL,1);
+    if(arrRef.length===0) arrRef.push('');
+    saveDB(); renderApp();
+  }
+});
+
+document.addEventListener('change', function(e){
+  var el = e.target;
+  if(el.getAttribute('data-action') === 'decideProduct'){
+    var slid = el.getAttribute('data-slid');
+    var sl = db.spyLinks.find(function(x){return x.id===slid;});
+    sl.decision = el.value;
+    if(el.value === 'aprobado' && !sl.productId){
+      var np = emptyProduct(sl.name || 'Producto sin nombre', '', sl.niche, '');
+      np.responsible = '';
+      np.originalLink = sl.urls[0] || '';
+      np.refLinks = sl.urls.slice();
+      np.keyword = (sl.keywordActivador || sl.name || 'PRODUCTO').split(' ')[0].toUpperCase();
+      np.notes = sl.keywordActivador || '';
+      db.products.push(np);
+      sl.productId = np.id;
+      log('Producto creado desde productos para lanzar', np.name);
+      toast(np.name+' aprobado — pasa a Información clave de productos aprobados');
+    } else if(el.value === 'descartado'){
+      log('Producto descartado en productos para lanzar', sl.name || (sl.urls && sl.urls[0]) || '');
+    }
+    saveDB();
+    renderApp();
+  }
+});
+
+document.getElementById('globalSearch').addEventListener('input', function(e){
+  db.ui.boardFilters.search = e.target.value;
+  db.ui.activeNav = 'tablero';
+  saveDB();
+  renderApp();
+});
+document.getElementById('boardSearch').addEventListener('input', function(e){ db.ui.boardFilters.search = e.target.value; saveDB(); renderBoard(); });
+document.getElementById('boardStatus').addEventListener('change', function(e){ db.ui.boardFilters.status = e.target.value; saveDB(); renderBoard(); });
+document.getElementById('boardResp').addEventListener('change', function(e){ db.ui.boardFilters.responsible = e.target.value; saveDB(); renderBoard(); });
+document.getElementById('boardCountry').addEventListener('change', function(e){ db.ui.boardFilters.country = e.target.value; saveDB(); renderBoard(); });
+document.getElementById('boardClear').addEventListener('click', function(){ db.ui.boardFilters = { search:'', status:'todos', responsible:'todos', country:'todos' }; saveDB(); renderBoard(); });
+
+document.addEventListener('change', function(e){
+  if(e.target.hasAttribute('data-boardresp')){
+    db.boardResp[e.target.getAttribute('data-boardresp')] = e.target.value;
+    saveDB();
+    renderBoard();
+  }
+});
+
+document.getElementById('fichaClose').addEventListener('click', function(){ document.getElementById('fichaModalBg').classList.remove('show'); });
+document.getElementById('resetDemoBtn').addEventListener('click', resetDemo);
+
+/* ---------------- TAREAS: filtro por persona ---------------- */
+document.getElementById('taskPersonFilter').addEventListener('change', renderWeekBoard);
+
+/* ---------------- TAREAS: modal asignar ---------------- */
+var assignTaskModal = document.getElementById('assignTaskModalBg');
+document.addEventListener('click', function(e){
+  var el = e.target.closest('[data-action]');
+  if(!el) return;
+  var action = el.getAttribute('data-action');
+
+  if(action === 'openAssignTask'){
+    document.getElementById('at_type').innerHTML = TASK_CATALOG.map(function(t){ return '<option value="'+t.id+'">'+t.label+'</option>'; }).join('');
+    document.getElementById('at_product').innerHTML = '<option value="">— Ninguno —</option>' + db.products.map(function(p){ return '<option value="'+p.id+'">'+esc(p.name)+' · '+phaseLabel(p.phase)+'</option>'; }).join('');
+    document.getElementById('at_time').value = '';
+    document.getElementById('at_fecha').value = today();
+    assignTaskModal.classList.add('show');
+  }
+  if(action === 'closeAssignTask'){ assignTaskModal.classList.remove('show'); }
+  if(action === 'saveAssignTask'){
+    var newTask = {
+      id: uid('wt'),
+      day: parseInt(document.getElementById('at_day').value,10),
+      taskTypeId: document.getElementById('at_type').value,
+      assignee: document.getElementById('at_person').value,
+      producto: document.getElementById('at_product').value,
+      tiempoEstimado: document.getElementById('at_time').value,
+      fecha: document.getElementById('at_fecha').value,
+      status:'pendiente', links:[''], r1:'pendiente', r2:'pendiente', r3:'pendiente'
+    };
+    db.weekTasks.push(newTask);
+    log('Tarea asignada: '+taskTypeById(newTask.taskTypeId).label, newTask.assignee);
+    saveDB();
+    assignTaskModal.classList.remove('show');
+    renderWeekBoard();
+    toast('Tarea asignada a '+newTask.assignee+' — '+DAY_LABELS[newTask.day]);
+  }
+
+  if(action === 'delWeekTask'){
+    var wtid = el.getAttribute('data-wtid');
+    db.weekTasks = db.weekTasks.filter(function(t){ return t.id !== wtid; });
+    saveDB(); renderWeekBoard();
+  }
+  if(action === 'toggleRound'){
+    var wtid2 = el.getAttribute('data-wtid');
+    var round = el.getAttribute('data-round');
+    var task = db.weekTasks.find(function(t){ return t.id === wtid2; });
+    task[round] = task[round] === 'terminado' ? 'pendiente' : 'terminado';
+    saveDB(); renderWeekBoard();
+  }
+  if(action === 'addTaskLink'){
+    var taskA = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
+    taskA.links.push('');
+    saveDB(); renderWeekBoard();
+  }
+  if(action === 'delTaskLink'){
+    var taskD = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
+    taskD.links.splice(parseInt(el.getAttribute('data-idx'),10),1);
+    if(taskD.links.length===0) taskD.links.push('');
+    saveDB(); renderWeekBoard();
+  }
+
+  if(action === 'addHtmlBlock'){
+    var contentA = getTutorialContent(el.getAttribute('data-tut'));
+    contentA.htmlBlocks.push({ nombre:'', html:'' });
+    saveDB(); renderTutorialCourse();
+  }
+  if(action === 'delHtmlBlock'){
+    var contentD = getTutorialContent(el.getAttribute('data-tut'));
+    contentD.htmlBlocks.splice(parseInt(el.getAttribute('data-idx'),10),1);
+    saveDB(); renderTutorialCourse();
+  }
+  if(action === 'addTutMaterial'){
+    var contentM = getTutorialContent(el.getAttribute('data-tut'));
+    contentM.materiales.push('');
+    saveDB(); renderTutorialCourse();
+  }
+  if(action === 'delTutMaterial'){
+    var contentM2 = getTutorialContent(el.getAttribute('data-tut'));
+    contentM2.materiales.splice(parseInt(el.getAttribute('data-idx'),10),1);
+    if(contentM2.materiales.length===0) contentM2.materiales.push('');
+    saveDB(); renderTutorialCourse();
+  }
+});
+
+/* ---------------- TAREAS: edición inline (link/status por tarea) ---------------- */
+document.addEventListener('change', function(e){
+  var el = e.target;
+  if(el.hasAttribute('data-wt') && el.hasAttribute('data-field')){
+    var task = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wt'); });
+    if(!task) return;
+    setDeep(task, el.getAttribute('data-field'), el.value);
+    saveDB(); renderWeekBoard();
+  }
+  if(el.hasAttribute('data-tut') && el.hasAttribute('data-field')){
+    var content = getTutorialContent(el.getAttribute('data-tut'));
+    setDeep(content, el.getAttribute('data-field'), el.value);
+    saveDB(); renderTutorialCourse();
+  }
+});
+
+renderApp();
+
+})();
+</script>
+</body>
+</html>
