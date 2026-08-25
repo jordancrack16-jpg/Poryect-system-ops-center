@@ -208,6 +208,7 @@
   .task-card input[type=date]{background:var(--blue-bg);border:1px solid var(--blue);color:var(--text);}
   .task-card select{background:var(--purple-bg);border:1px solid var(--purple);color:var(--text);}
   .task-card .boardlinks-wrap input[type=text]{background:var(--green-bg);border:1px solid var(--green);color:var(--text);}
+  .task-card input:disabled{opacity:.65;cursor:not-allowed;}
   .task-card .check-row{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--text);margin:10px 0;text-transform:none;letter-spacing:normal;}
   .task-card .check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--purple);flex-shrink:0;}
   .task-card .tdel{width:100%;text-align:center;font-size:.75rem;padding:8px;margin-top:14px;}
@@ -638,7 +639,7 @@ function emptyProduct(name, country, niche, responsible){
     originalLink:'', pageLink:'', driveLink:'', docsLink:'', notes:'', boardLinks: [''], refLinks: [''],
     phase: 'preparacion', createdAt: today(),
     ads: { responsible:'Cami', status:'pendiente', textoStatus:'pendiente', count:0, driveLink:'', copyLink:'', fechaInicio:'', fechaFinal:'', textoPrincipal:'', hook:'', cta:'', textoResponsable:'Meli', textoDoc:'', activo:false, bm:'', cuentaPublicitaria:'', sendyCorreo:'', sendyContrasena:'', sendyWhatsapp:'', sendyId:'' },
-    campaignData: { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'' },
+    campaignData: { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'', upsells:[{nombre:'',link:''}] },
     funnel: { responsible:'Jesús', country: country || '', status:'pendiente', linkFlujo:'', linkDrive:'', observaciones:'', testeoEstado:'pendiente' },
     campaignEntries: [],
     idealCosts: { costoMensajeIdeal:'', costoCompraIdeal:'' },
@@ -908,7 +909,7 @@ function migrateDB(d){
     if(p.ads && p.ads.bm === undefined){ p.ads.bm = ''; }
     if(p.ads && p.ads.cuentaPublicitaria === undefined){ p.ads.cuentaPublicitaria = ''; }
     if(p.ads && p.ads.sendyCorreo === undefined){ p.ads.sendyCorreo = ''; p.ads.sendyContrasena = ''; p.ads.sendyWhatsapp = ''; p.ads.sendyId = ''; }
-    if(!p.campaignData){ p.campaignData = { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'' }; }
+    if(!p.campaignData){ p.campaignData = { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'', upsells:[{nombre:'',link:''}] }; }
     if(!p.campaignData.linksArchivos || p.campaignData.linksArchivos.length===0){ p.campaignData.linksArchivos = ['']; }
     if(p.campaignData.textoAnuncio === undefined) p.campaignData.textoAnuncio = '';
     if(p.campaignData.fraseActivadora === undefined) p.campaignData.fraseActivadora = '';
@@ -923,6 +924,13 @@ function migrateDB(d){
     if(p.campaignData.marcaCompra === undefined) p.campaignData.marcaCompra = false;
     if(p.campaignData.linkProductoDigital === undefined) p.campaignData.linkProductoDigital = '';
     if(p.campaignData.textoBienvenida === undefined) p.campaignData.textoBienvenida = '';
+    if(!p.campaignData.upsells || p.campaignData.upsells.length===0){ p.campaignData.upsells = [{nombre:'',link:''}]; }
+    p.campaignData.upsells = p.campaignData.upsells.map(function(u){
+      if(typeof u === 'string') return { nombre:'', link:u };
+      if(u.nombre===undefined) u.nombre = '';
+      if(u.link===undefined) u.link = '';
+      return u;
+    });
     if(p.funnel && p.funnel.testeoEstado === undefined){ p.funnel.testeoEstado = 'pendiente'; }
     if(p.optimizacionActiva === undefined && p.campaignLaunchStatus === undefined){ p.campaignLaunchStatus = 'pendiente'; }
     if(p.activadorFlujos === undefined){ p.activadorFlujos = ''; }
@@ -980,6 +988,17 @@ function migrateDB(d){
       var compraProd = (d.products||[]).find(function(p){ return p.id === t.producto; });
       if(compraProd && compraProd.campaignData && !compraProd.campaignData.linkProductoDigital && t.links && t.links[0]){
         compraProd.campaignData.linkProductoDigital = t.links[0];
+      }
+    }
+    if(t.taskTypeId === 'ideas_upsell' && t.producto){
+      var upProd = (d.products||[]).find(function(p){ return p.id === t.producto; });
+      if(upProd && upProd.campaignData){
+        var cdUpsells = upProd.campaignData.upsells || [];
+        var cdEmpty = cdUpsells.every(function(u){ return !u.link && !u.nombre; });
+        if(cdEmpty && t.links && t.links.some(function(u){ return u && u.trim(); })){
+          upProd.campaignData.upsells = t.links.filter(function(u){ return u && u.trim(); }).map(function(u){ return { nombre:'', link:u }; });
+          if(upProd.campaignData.upsells.length===0) upProd.campaignData.upsells = [{nombre:'',link:''}];
+        }
       }
     }
   });
@@ -1879,6 +1898,13 @@ function taskCardHTML(t){
       '<div style="font-size:.75rem;color:var(--text2);margin-top:8px;">Elige un producto arriba para cargar el link y los datos del flujo.</div>';
     bodyHTML = productoSelectBlockD + fechaBlock + compraBody + statusBlock;
 
+  } else if(t.taskTypeId === 'ideas_upsell'){
+    var productoSelectBlockU = productoSelectBlockFor(t);
+    var prodU = t.producto ? findProduct(t.producto) : null;
+    var upsellBody = prodU ? upsellFieldsBlock(prodU) :
+      taskLinksBlock(t, 'links', 'Upsells', 'Link del Upsell');
+    bodyHTML = productoSelectBlockU + fechaBlock + upsellBody + statusBlock;
+
   } else {
     var linksBlockDefault = taskLinksBlock(t, 'links', 'Links', type.linkLabel||'Link');
     bodyHTML = fechaBlock + statusBlock + linksBlockDefault + roundsBlock;
@@ -1958,6 +1984,20 @@ function compraDigitalFieldsBlock(p){
     cdText(p, 'cuentaSendy', 'Cuenta de Sendy', 'Ej: equipo@dominio.com') +
     cdText(p, 'correoSendy', 'Correo de Sendy', 'Ej: equipo@dominio.com') +
     cdTextarea(p, 'textoBienvenida', 'Texto de bienvenida', 'Escribe aquí el texto de bienvenida / agradecimiento');
+}
+function upsellFieldsBlock(p){
+  var arr = p.campaignData.upsells && p.campaignData.upsells.length ? p.campaignData.upsells : [{nombre:'',link:''}];
+  var rows = arr.map(function(u, idx){
+    return '<div class="spy-entry">' +
+      '<div class="spy-entry-head"><span>Upsell '+(idx+1)+'</span>' + (arr.length>1 ? '<button class="mini-del" data-action="delUpsell" data-pid="'+p.id+'" data-idx="'+idx+'">✕</button>' : '') + '</div>' +
+      '<label>Nombre del Upsell</label><input type="text" placeholder="Ej: Pack devocional extra" value="'+esc(u.nombre)+'" data-pid="'+p.id+'" data-field="campaignData.upsells.'+idx+'.nombre">' +
+      '<label>Link del Upsell</label><div class="boardlink-row"><input type="text" placeholder="Link del Upsell '+(idx+1)+'" value="'+esc(u.link)+'" data-pid="'+p.id+'" data-field="campaignData.upsells.'+idx+'.link">' +
+        (u.link ? '<button class="mini-open" data-action="openLink" data-val="'+esc(u.link)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+  return '<label>Nombre del producto</label><input type="text" value="'+esc(p.name)+'" disabled>' +
+    '<label>Upsells</label>' + rows + '<button class="btn-ghost add-link-btn" data-action="addUpsell" data-pid="'+p.id+'">+ Agregar Upsell</button>';
 }
 function spyEntriesBlock(t){
   var ids = t.spyIds || [];
@@ -2164,6 +2204,19 @@ document.addEventListener('click', function(e){
     var arrRef = getDeep(pDL, arrF2);
     arrRef.splice(idxDL,1);
     if(arrRef.length===0) arrRef.push('');
+    saveDB(); renderApp();
+  }
+  if(action === 'addUpsell'){
+    var pAU = findProduct(pid);
+    if(!pAU.campaignData.upsells) pAU.campaignData.upsells = [];
+    pAU.campaignData.upsells.push({nombre:'',link:''});
+    saveDB(); renderApp();
+  }
+  if(action === 'delUpsell'){
+    var pDU = findProduct(pid);
+    var idxDU = parseInt(el.getAttribute('data-idx'),10);
+    pDU.campaignData.upsells.splice(idxDU,1);
+    if(pDU.campaignData.upsells.length===0) pDU.campaignData.upsells.push({nombre:'',link:''});
     saveDB(); renderApp();
   }
 });
