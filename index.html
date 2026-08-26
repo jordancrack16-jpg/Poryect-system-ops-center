@@ -323,7 +323,7 @@
         <div class="toolbar">
           <input type="text" id="boardSearch" placeholder="Buscar producto...">
           <select id="boardStatus"><option value="todos">Estado: todos</option><option value="terminado">Terminado</option><option value="pendiente">Pendiente</option><option value="en_proceso">En proceso</option></select>
-          <select id="boardResp"><option value="todos">Responsable: todos</option><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option></select>
+          <select id="boardResp"><option value="todos">Responsable: todos</option><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option><option>Jhoon</option></select>
           <select id="boardCountry"><option value="todos">País: todos</option></select>
           <div class="spacer"></div>
           <button class="btn-ghost" id="boardClear">Limpiar</button>
@@ -380,7 +380,7 @@
       <div class="view" id="view-campanas"><div class="page-head"><div><h1>📣 Campañas</h1><p>Historial de entradas de campaña por producto</p></div></div><div id="campanasList"></div></div>
       <div class="view" id="view-flujos"><div class="page-head"><div><h1>💬 Flujos WhatsApp</h1><p>Palabra clave y estado de flujo por producto</p></div></div><div id="flujosList"></div></div>
       <div class="view" id="view-anuncios"><div class="page-head"><div><h1>🎬 Anuncios</h1><p>Anuncios en testeo y anuncios ganadores en escala</p></div></div><div id="anunciosList"></div></div>
-      <div class="view" id="view-equipo"><div class="page-head"><div><h1>👥 Equipo y roles</h1><p>Jordan (Admin) · Cami y Meli (Creativos) · Jesús (Flujos)</p></div></div></div>
+      <div class="view" id="view-equipo"><div class="page-head"><div><h1>👥 Equipo y roles</h1><p>Jordan (Admin) · Cami, Meli y Jhoon (Creativos) · Jesús (Flujos)</p></div></div></div>
       <div class="view" id="view-analiticas"><div class="page-head"><div><h1>📊 Analíticas</h1><p>Resumen financiero global</p></div></div><div id="analiticasBody"></div></div>
       <div class="view" id="view-tareas">
         <div class="page-head"><div><h1>✓ Tareas</h1><p>Organización semanal y diaria del equipo — correlacionada con Pre-Testeo, Testeo, Optimización y Escala</p></div></div>
@@ -388,7 +388,7 @@
         <div class="toolbar">
           <select id="taskPersonFilter">
             <option value="todos">Toda persona</option>
-            <option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option>
+            <option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option><option>Jhoon</option>
           </select>
           <div class="spacer"></div>
           <button class="btn-purple-out" data-action="openAssignTask">+ Asignar tarea</button>
@@ -428,7 +428,7 @@
     <div class="field"><label>Nombre provisional</label><input type="text" id="al_name"></div>
     <div class="field"><label>Nicho</label><input type="text" id="al_niche"></div>
     <div class="field"><label>Responsable</label>
-      <select id="al_resp"><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option></select>
+      <select id="al_resp"><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option><option>Jhoon</option></select>
     </div>
     <div class="field"><label>Observaciones</label><textarea id="al_notes"></textarea></div>
     <div class="actions"><button class="cancel" data-action="closeAddLink">Cancelar</button><button class="save" data-action="saveAddLink">Agregar</button></div>
@@ -450,7 +450,7 @@
     <div class="field"><label>País</label><input type="text" id="np_country"></div>
     <div class="field"><label>Nicho</label><input type="text" id="np_niche"></div>
     <div class="field"><label>Responsable</label>
-      <select id="np_resp"><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option></select>
+      <select id="np_resp"><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option><option>Jhoon</option></select>
     </div>
     <div class="actions"><button class="cancel" data-action="closeNewProduct">Cancelar</button><button class="save" data-action="saveNewProduct">Crear</button></div>
   </div>
@@ -463,7 +463,7 @@
       <select id="at_day"><option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option></select>
     </div>
     <div class="field"><label>Tipo de tarea</label><select id="at_type"></select></div>
-    <div class="field"><label>Persona</label><select id="at_person"><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option></select></div>
+    <div class="field"><label>Persona</label><select id="at_person"><option>Jordan</option><option>Cami</option><option>Meli</option><option>Jesús</option><option>Jhoon</option></select></div>
     <div class="field"><label>Producto relacionado (opcional)</label><select id="at_product"><option value="">— Ninguno —</option></select></div>
     <div class="field"><label>Tiempo estimado</label><input type="text" id="at_time" placeholder="Ej: 45 min"></div>
     <div class="field"><label>Fecha</label><input type="date" id="at_fecha"></div>
@@ -875,33 +875,45 @@ function unsubscribeRealtime(){
   }
 }
 function migrateDB(d){
+  if(!Array.isArray(d.products)) d.products = [];
+  if(!Array.isArray(d.spyLinks)) d.spyLinks = [];
+  if(!Array.isArray(d.history)) d.history = [];
+  if(!d.ui || typeof d.ui !== 'object'){ d.ui = {}; }
+  if(!d.ui.boardFilters || typeof d.ui.boardFilters !== 'object'){ d.ui.boardFilters = { search:'', status:'todos', responsible:'todos', country:'todos' }; }
+  if(d.ui.activeNav === undefined){ d.ui.activeNav = 'dashboard'; }
+  if(d.ui.boardView === undefined){ d.ui.boardView = 'todos'; }
+
   if(!d.boardResp){ d.boardResp = { links:'Jordan', ads:'Cami', funnel:'Jesús', texto:'Meli', campanas:'Jordan', linkAds:'Cami', linkCopy:'Meli', activador:'Jesús', sendy:'Jesús' }; }
   else{
     if(!d.boardResp.campanas) d.boardResp.campanas = d.boardResp.optimizacion || 'Jordan';
     if(!d.boardResp.activador) d.boardResp.activador = d.boardResp.escala || 'Jesús';
     if(!d.boardResp.sendy) d.boardResp.sendy = 'Jesús';
   }
-  if(!d.weekTasks){ d.weekTasks = seedWeekTasks(); }
-  if(!d.weekTasksArchive){ d.weekTasksArchive = []; }
-  else{
-    d.weekTasks.forEach(function(t){
-      if(!t.links){ t.links = t.link ? [t.link] : ['']; delete t.link; }
-      if(t.links.length===0) t.links.push('');
-      if(t.fecha === undefined) t.fecha = '';
-      if(t.taskTypeId === 'edicion_anuncios'){
-        if(!t.linksArchivos) t.linksArchivos = [''];
-        if(t.textoAnuncio === undefined) t.textoAnuncio = '';
-        if(t.fraseActivadora === undefined) t.fraseActivadora = '';
-      }
-      if(t.taskTypeId === 'revision_chats'){
-        if(!t.sendyAccounts || t.sendyAccounts.length===0) t.sendyAccounts = [{correo:'',contrasena:''}];
-      }
-      if(t.taskTypeId === 'investigacion'){
-        if(!t.spyIds) t.spyIds = [];
-      }
-    });
-  }
-  if(!d.tutorialContent){ d.tutorialContent = {}; }
+  /* IMPORTANTE: la normalización de weekTasks debe correr SIEMPRE, exista o no
+     weekTasksArchive. Antes estaba encadenada por error dentro de un else y
+     solo se ejecutaba quitando el chequeo de la archive — eso dejaba tareas
+     reales sin normalizar (por eso desaparecían links de "Ideas de Upsell", etc). */
+  if(!Array.isArray(d.weekTasks)){ d.weekTasks = []; }
+  if(!Array.isArray(d.weekTasksArchive)){ d.weekTasksArchive = []; }
+  d.weekTasks.forEach(function(t){
+    if(!t || typeof t !== 'object') return;
+    if(!t.links){ t.links = t.link ? [t.link] : ['']; delete t.link; }
+    if(!Array.isArray(t.links)) t.links = [''];
+    if(t.links.length===0) t.links.push('');
+    if(t.fecha === undefined) t.fecha = '';
+    if(t.taskTypeId === 'edicion_anuncios'){
+      if(!Array.isArray(t.linksArchivos) || t.linksArchivos.length===0){ if(!t.linksArchivos) t.linksArchivos = ['']; }
+      if(t.textoAnuncio === undefined) t.textoAnuncio = '';
+      if(t.fraseActivadora === undefined) t.fraseActivadora = '';
+    }
+    if(t.taskTypeId === 'revision_chats'){
+      if(!Array.isArray(t.sendyAccounts) || t.sendyAccounts.length===0){ t.sendyAccounts = [{correo:'',contrasena:''}]; }
+    }
+    if(t.taskTypeId === 'investigacion'){
+      if(!Array.isArray(t.spyIds)) t.spyIds = [];
+    }
+  });
+  if(!d.tutorialContent || typeof d.tutorialContent !== 'object'){ d.tutorialContent = {}; }
   if(!d.spyLinks){ d.spyLinks = []; }
   d.weekTasks.forEach(function(t){
     if(t.taskTypeId === 'investigacion' && t.spyIds.length === 0 && t.links && t.links.some(function(u){ return u && u.trim(); })){
@@ -927,16 +939,45 @@ function migrateDB(d){
     if(l.urls.length === 0) l.urls.push('');
   });
   (d.products||[]).forEach(function(p){
-    if(!p.boardLinks){ p.boardLinks = p.driveLink ? [p.driveLink] : ['']; }
-    if(!p.refLinks){ p.refLinks = p.originalLink ? [p.originalLink] : ['']; }
-    if(p.ads && p.ads.textoStatus === undefined){ p.ads.textoStatus = 'pendiente'; }
-    if(p.ads && p.ads.copyLink === undefined){ p.ads.copyLink = ''; }
-    if(p.ads && p.ads.activo === undefined){ p.ads.activo = false; }
-    if(p.ads && p.ads.bm === undefined){ p.ads.bm = ''; }
-    if(p.ads && p.ads.cuentaPublicitaria === undefined){ p.ads.cuentaPublicitaria = ''; }
-    if(p.ads && p.ads.sendyCorreo === undefined){ p.ads.sendyCorreo = ''; p.ads.sendyContrasena = ''; p.ads.sendyWhatsapp = ''; p.ads.sendyId = ''; }
-    if(!p.campaignData){ p.campaignData = { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'' }; }
-    if(!p.campaignData.linksArchivos || p.campaignData.linksArchivos.length===0){ p.campaignData.linksArchivos = ['']; }
+    if(!p || typeof p !== 'object') return;
+    /* Garantiza que existan los objetos base ANTES de tocar subcampos.
+       Un producto real de una versión vieja puede no tener ads/funnel/
+       checklist/scale en absoluto — no solo con campos faltantes. */
+    if(!p.ads || typeof p.ads !== 'object'){
+      p.ads = { responsible:'Cami', status:'pendiente', textoStatus:'pendiente', count:0, driveLink:'', copyLink:'', fechaInicio:'', fechaFinal:'', textoPrincipal:'', hook:'', cta:'', textoResponsable:'Meli', textoDoc:'', activo:false, bm:'', cuentaPublicitaria:'', sendyCorreo:'', sendyContrasena:'', sendyWhatsapp:'', sendyId:'' };
+    }
+    if(!p.funnel || typeof p.funnel !== 'object'){
+      p.funnel = { responsible:'Jesús', country:p.country||'', status:'pendiente', linkFlujo:'', linkDrive:'', observaciones:'', testeoEstado:'pendiente' };
+    }
+    if(!p.checklist || typeof p.checklist !== 'object'){
+      p.checklist = { productoDigital:false, productoDigitalLink:'', comentariosPositivos:false, pixelConfigurado:false, upsell:false, sendyConfigurado:false, flujoOptimizado:false };
+    }
+    if(!p.scale || typeof p.scale !== 'object'){
+      p.scale = { campaigns:[], cbo:{ funciona:'testeando', presupuesto:'', cantidadCbo:0, anunciosActivos:0, anunciosEnCbo:0 }, resumen:{ hoy:{gasto:'',facturacion:''}, ayer:{gasto:'',facturacion:''}, semana:{gasto:'',facturacion:''} }, upsells:[], anunciosGanadores:[], driveGanadoresGeneral:'' };
+    } else {
+      if(!Array.isArray(p.scale.campaigns)) p.scale.campaigns = [];
+      if(!Array.isArray(p.scale.upsells)) p.scale.upsells = [];
+      if(!Array.isArray(p.scale.anunciosGanadores)) p.scale.anunciosGanadores = [];
+      if(!p.scale.cbo || typeof p.scale.cbo !== 'object'){ p.scale.cbo = { funciona:'testeando', presupuesto:'', cantidadCbo:0, anunciosActivos:0, anunciosEnCbo:0 }; }
+      if(!p.scale.resumen || typeof p.scale.resumen !== 'object'){ p.scale.resumen = { hoy:{gasto:'',facturacion:''}, ayer:{gasto:'',facturacion:''}, semana:{gasto:'',facturacion:''} }; }
+      else{
+        ['hoy','ayer','semana'].forEach(function(k){
+          if(!p.scale.resumen[k] || typeof p.scale.resumen[k] !== 'object'){ p.scale.resumen[k] = { gasto:'', facturacion:'' }; }
+        });
+      }
+      if(p.scale.driveGanadoresGeneral === undefined) p.scale.driveGanadoresGeneral = '';
+    }
+
+    if(!Array.isArray(p.boardLinks) || p.boardLinks.length===0){ p.boardLinks = p.driveLink ? [p.driveLink] : ['']; }
+    if(!Array.isArray(p.refLinks) || p.refLinks.length===0){ p.refLinks = p.originalLink ? [p.originalLink] : ['']; }
+    if(p.ads.textoStatus === undefined){ p.ads.textoStatus = 'pendiente'; }
+    if(p.ads.copyLink === undefined){ p.ads.copyLink = ''; }
+    if(p.ads.activo === undefined){ p.ads.activo = false; }
+    if(p.ads.bm === undefined){ p.ads.bm = ''; }
+    if(p.ads.cuentaPublicitaria === undefined){ p.ads.cuentaPublicitaria = ''; }
+    if(p.ads.sendyCorreo === undefined){ p.ads.sendyCorreo = ''; p.ads.sendyContrasena = ''; p.ads.sendyWhatsapp = ''; p.ads.sendyId = ''; }
+    if(!p.campaignData || typeof p.campaignData !== 'object'){ p.campaignData = { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'' }; }
+    if(!Array.isArray(p.campaignData.linksArchivos) || p.campaignData.linksArchivos.length===0){ p.campaignData.linksArchivos = ['']; }
     if(p.campaignData.textoAnuncio === undefined) p.campaignData.textoAnuncio = '';
     if(p.campaignData.fraseActivadora === undefined) p.campaignData.fraseActivadora = '';
     if(p.campaignData.bm === undefined) p.campaignData.bm = '';
@@ -950,12 +991,12 @@ function migrateDB(d){
     if(p.campaignData.marcaCompra === undefined) p.campaignData.marcaCompra = false;
     if(p.campaignData.linkProductoDigital === undefined) p.campaignData.linkProductoDigital = '';
     if(p.campaignData.textoBienvenida === undefined) p.campaignData.textoBienvenida = '';
-    if(p.funnel && p.funnel.testeoEstado === undefined){ p.funnel.testeoEstado = 'pendiente'; }
+    if(p.funnel.testeoEstado === undefined){ p.funnel.testeoEstado = 'pendiente'; }
     if(p.optimizacionActiva === undefined && p.campaignLaunchStatus === undefined){ p.campaignLaunchStatus = 'pendiente'; }
     if(p.activadorFlujos === undefined){ p.activadorFlujos = ''; }
-    if(!p.sendyAccount){ p.sendyAccount = { cuenta:'', correo:'', contrasena:'', link:'' }; }
-    if(!p.opt){
-      var lastCe = (p.campaignEntries||[])[p.campaignEntries.length-1];
+    if(!p.sendyAccount || typeof p.sendyAccount !== 'object'){ p.sendyAccount = { cuenta:'', correo:'', contrasena:'', link:'' }; }
+    if(!p.opt || typeof p.opt !== 'object'){
+      var lastCe = (p.campaignEntries||[])[(p.campaignEntries||[]).length-1];
       p.opt = lastCe ? { fecha:lastCe.fecha, pais:lastCe.pais, gasto:lastCe.gasto, mensajes:lastCe.mensajes, compras:lastCe.compras } : { fecha:'', pais:p.country||'', gasto:'', mensajes:'', compras:'' };
     }
     if(!Array.isArray(p.optDays) || p.optDays.length === 0){
@@ -963,32 +1004,29 @@ function migrateDB(d){
         ? [{ id:uid('od'), fecha:p.opt.fecha||'', pais:p.opt.pais||p.country||'', gasto:p.opt.gasto||'', mensajes:p.opt.mensajes||'', compras:p.opt.compras||'' }]
         : [];
     }
-    if(p.checklist){
-      if(p.checklist.productoDigitalLink === undefined) p.checklist.productoDigitalLink = '';
-      if(p.checklist.pixelConfigurado === undefined) p.checklist.pixelConfigurado = false;
-      delete p.checklist.cantidadUpsells;
-      delete p.checklist.upsellConvierte;
-      delete p.checklist.observaciones;
-    }
-    if(p.scale){
-      delete p.scale.errores;
-      (p.scale.upsells||[]).forEach(function(u){
-        if(u.linkProducto === undefined) u.linkProducto = '';
-        if(u.copyProducto === undefined) u.copyProducto = '';
-      });
-      (p.scale.campaigns||[]).forEach(function(c){
-        if(!c.id) c.id = uid('sc');
-        if(c.fecha === undefined) c.fecha = today();
-        if(c.cuentaPublicitaria === undefined) c.cuentaPublicitaria = '';
-        if(c.bm === undefined) c.bm = '';
-        if(c.mensajes === undefined) c.mensajes = 0;
-      });
-      (p.scale.anunciosGanadores||[]).forEach(function(a){
-        if(a.fecha === undefined) a.fecha = today();
-        if(a.validado === undefined) a.validado = (a.estado === 'ganador');
-        delete a.hook; delete a.pais; delete a.gasto; delete a.ventas; delete a.roas; delete a.estado;
-      });
-    }
+    if(p.checklist.productoDigitalLink === undefined) p.checklist.productoDigitalLink = '';
+    if(p.checklist.pixelConfigurado === undefined) p.checklist.pixelConfigurado = false;
+    delete p.checklist.cantidadUpsells;
+    delete p.checklist.upsellConvierte;
+    delete p.checklist.observaciones;
+
+    delete p.scale.errores;
+    p.scale.upsells.forEach(function(u){
+      if(u.linkProducto === undefined) u.linkProducto = '';
+      if(u.copyProducto === undefined) u.copyProducto = '';
+    });
+    p.scale.campaigns.forEach(function(c){
+      if(!c.id) c.id = uid('sc');
+      if(c.fecha === undefined) c.fecha = today();
+      if(c.cuentaPublicitaria === undefined) c.cuentaPublicitaria = '';
+      if(c.bm === undefined) c.bm = '';
+      if(c.mensajes === undefined) c.mensajes = 0;
+    });
+    p.scale.anunciosGanadores.forEach(function(a){
+      if(a.fecha === undefined) a.fecha = today();
+      if(a.validado === undefined) a.validado = (a.estado === 'ganador');
+      delete a.hook; delete a.pais; delete a.gasto; delete a.ventas; delete a.roas; delete a.estado;
+    });
   });
   (d.weekTasks||[]).forEach(function(t){
     if(t.taskTypeId === 'edicion_anuncios' && t.producto){
@@ -1386,7 +1424,7 @@ function linkInput(p, field, placeholder){
   return '<input type="text" placeholder="'+(placeholder||'')+'" value="'+esc(getDeep(p,field))+'" data-pid="'+p.id+'" data-field="'+field+'">';
 }
 function colRespSelect(key){
-  return '<select class="colhead-resp-select" data-boardresp="'+key+'">'+selOpts(['Jordan','Jesús','Cami','Meli'], db.boardResp[key])+'</select>';
+  return '<select class="colhead-resp-select" data-boardresp="'+key+'">'+selOpts(['Jordan','Jesús','Cami','Meli','Jhoon'], db.boardResp[key])+'</select>';
 }
 function boardLinksCell(p){
   return multiLinksEditor(p, 'boardLinks');
@@ -1411,9 +1449,7 @@ function statusColor(val, ideal){
   return 'red';
 }
 function renderOptimizacion(){
-  var list = db.products.filter(function(p){ return p.phase === 'optimizacion'; });
-
-  document.getElementById('optBoardTable').innerHTML = buildOptBoardTable(list);
+  var list = (db.products || []).filter(function(p){ return p.phase === 'optimizacion'; });
 
   document.getElementById('optChecklists').innerHTML = list.map(function(p){
     var gasto = parseFloat(p.opt.gasto)||0;
@@ -1851,25 +1887,37 @@ function renderFicha(){
 }
 function kv(label, val){ return '<div class="kv"><div class="l">'+label+'</div><div class="v">'+esc(val)+'</div></div>'; }
 
+/* Ejecuta cada función de render de forma aislada: si UNA falla por datos
+   antiguos/incompletos, las demás secciones igual se renderizan, y la consola
+   muestra exactamente qué función fue, con su mensaje y stack reales — no se
+   esconde el error, solo se evita que tumbe TODO renderApp(). */
+function safeRender(name, fn){
+  try{
+    fn();
+  }catch(err){
+    console.error('OPS CENTER — error en '+name+'():', err && err.message ? err.message : err);
+    console.error('STACK ('+name+'):', err && err.stack ? err.stack : 'Sin stack');
+  }
+}
 function renderApp(){
   switchView(db.ui.activeNav);
-  renderDashboard();
-  renderComandos();
-  renderSpy();
-  renderTesteo();
-  renderOptimizacion();
-  renderTesteoBoard();
-  renderEscala();
-  renderBoard();
-  renderHistorial();
-  renderProductosList();
-  renderCampanasList();
-  renderFlujosList();
-  renderAnunciosList();
-  renderAnaliticas();
-  renderWeekBoard();
-  renderTaskArchive();
-  renderTutorialCourse();
+  safeRender('renderDashboard', renderDashboard);
+  safeRender('renderComandos', renderComandos);
+  safeRender('renderSpy', renderSpy);
+  safeRender('renderTesteo', renderTesteo);
+  safeRender('renderOptimizacion', renderOptimizacion);
+  safeRender('renderTesteoBoard', renderTesteoBoard);
+  safeRender('renderEscala', renderEscala);
+  safeRender('renderBoard', renderBoard);
+  safeRender('renderHistorial', renderHistorial);
+  safeRender('renderProductosList', renderProductosList);
+  safeRender('renderCampanasList', renderCampanasList);
+  safeRender('renderFlujosList', renderFlujosList);
+  safeRender('renderAnunciosList', renderAnunciosList);
+  safeRender('renderAnaliticas', renderAnaliticas);
+  safeRender('renderWeekBoard', renderWeekBoard);
+  safeRender('renderTaskArchive', renderTaskArchive);
+  safeRender('renderTutorialCourse', renderTutorialCourse);
 }
 function taskTypeById(id){ return TASK_CATALOG.find(function(t){ return t.id === id; }); }
 function productLabel(pid){
