@@ -208,7 +208,6 @@
   .task-card input[type=date]{background:var(--blue-bg);border:1px solid var(--blue);color:var(--text);}
   .task-card select{background:var(--purple-bg);border:1px solid var(--purple);color:var(--text);}
   .task-card .boardlinks-wrap input[type=text]{background:var(--green-bg);border:1px solid var(--green);color:var(--text);}
-  .task-card input:disabled{opacity:.65;cursor:not-allowed;}
   .task-card .check-row{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--text);margin:10px 0;text-transform:none;letter-spacing:normal;}
   .task-card .check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--purple);flex-shrink:0;}
   .task-card .tdel{width:100%;text-align:center;font-size:.75rem;padding:8px;margin-top:14px;}
@@ -395,6 +394,10 @@
         </div>
 
         <div class="week-board" id="weekBoard"></div>
+
+        <div class="section-title">Tareas archivadas (resumen)</div>
+        <p style="color:var(--text2);font-size:.78rem;margin-top:-8px;margin-bottom:12px;">Cuando quitas una tarea, sus links y textos quedan guardados aquí de forma resumida — no se pierden.</p>
+        <div id="taskArchiveList"></div>
       </div>
 
       <div class="view" id="view-tutoriales">
@@ -618,6 +621,7 @@ function defaultDB(){
     history: [],
     boardResp: { links:'Jordan', ads:'Cami', funnel:'Jesús', texto:'Meli', campanas:'Jordan', linkAds:'Cami', linkCopy:'Meli', activador:'Jesús', sendy:'Jesús' },
     weekTasks: seedWeekTasks(),
+    weekTasksArchive: [],
     tutorialContent: {},
     ui: { activeNav:'dashboard', boardView:'todos', boardFilters:{ search:'', status:'todos', responsible:'todos', country:'todos' } }
   };
@@ -639,7 +643,7 @@ function emptyProduct(name, country, niche, responsible){
     originalLink:'', pageLink:'', driveLink:'', docsLink:'', notes:'', boardLinks: [''], refLinks: [''],
     phase: 'preparacion', createdAt: today(),
     ads: { responsible:'Cami', status:'pendiente', textoStatus:'pendiente', count:0, driveLink:'', copyLink:'', fechaInicio:'', fechaFinal:'', textoPrincipal:'', hook:'', cta:'', textoResponsable:'Meli', textoDoc:'', activo:false, bm:'', cuentaPublicitaria:'', sendyCorreo:'', sendyContrasena:'', sendyWhatsapp:'', sendyId:'' },
-    campaignData: { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'', upsells:[{nombre:'',link:''}] },
+    campaignData: { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'' },
     funnel: { responsible:'Jesús', country: country || '', status:'pendiente', linkFlujo:'', linkDrive:'', observaciones:'', testeoEstado:'pendiente' },
     campaignEntries: [],
     idealCosts: { costoMensajeIdeal:'', costoCompraIdeal:'' },
@@ -857,6 +861,7 @@ function migrateDB(d){
     if(!d.boardResp.sendy) d.boardResp.sendy = 'Jesús';
   }
   if(!d.weekTasks){ d.weekTasks = seedWeekTasks(); }
+  if(!d.weekTasksArchive){ d.weekTasksArchive = []; }
   else{
     d.weekTasks.forEach(function(t){
       if(!t.links){ t.links = t.link ? [t.link] : ['']; delete t.link; }
@@ -909,7 +914,7 @@ function migrateDB(d){
     if(p.ads && p.ads.bm === undefined){ p.ads.bm = ''; }
     if(p.ads && p.ads.cuentaPublicitaria === undefined){ p.ads.cuentaPublicitaria = ''; }
     if(p.ads && p.ads.sendyCorreo === undefined){ p.ads.sendyCorreo = ''; p.ads.sendyContrasena = ''; p.ads.sendyWhatsapp = ''; p.ads.sendyId = ''; }
-    if(!p.campaignData){ p.campaignData = { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'', upsells:[{nombre:'',link:''}] }; }
+    if(!p.campaignData){ p.campaignData = { linksArchivos:[''], textoAnuncio:'', fraseActivadora:'', bm:'', cuentaPublicitaria:'', cuentaSendy:'', correoSendy:'', id:'', flujoLink:'', nombreFlujo:'', marcaInteresado:false, marcaCompra:false, linkProductoDigital:'', textoBienvenida:'' }; }
     if(!p.campaignData.linksArchivos || p.campaignData.linksArchivos.length===0){ p.campaignData.linksArchivos = ['']; }
     if(p.campaignData.textoAnuncio === undefined) p.campaignData.textoAnuncio = '';
     if(p.campaignData.fraseActivadora === undefined) p.campaignData.fraseActivadora = '';
@@ -924,13 +929,6 @@ function migrateDB(d){
     if(p.campaignData.marcaCompra === undefined) p.campaignData.marcaCompra = false;
     if(p.campaignData.linkProductoDigital === undefined) p.campaignData.linkProductoDigital = '';
     if(p.campaignData.textoBienvenida === undefined) p.campaignData.textoBienvenida = '';
-    if(!p.campaignData.upsells || p.campaignData.upsells.length===0){ p.campaignData.upsells = [{nombre:'',link:''}]; }
-    p.campaignData.upsells = p.campaignData.upsells.map(function(u){
-      if(typeof u === 'string') return { nombre:'', link:u };
-      if(u.nombre===undefined) u.nombre = '';
-      if(u.link===undefined) u.link = '';
-      return u;
-    });
     if(p.funnel && p.funnel.testeoEstado === undefined){ p.funnel.testeoEstado = 'pendiente'; }
     if(p.optimizacionActiva === undefined && p.campaignLaunchStatus === undefined){ p.campaignLaunchStatus = 'pendiente'; }
     if(p.activadorFlujos === undefined){ p.activadorFlujos = ''; }
@@ -988,17 +986,6 @@ function migrateDB(d){
       var compraProd = (d.products||[]).find(function(p){ return p.id === t.producto; });
       if(compraProd && compraProd.campaignData && !compraProd.campaignData.linkProductoDigital && t.links && t.links[0]){
         compraProd.campaignData.linkProductoDigital = t.links[0];
-      }
-    }
-    if(t.taskTypeId === 'ideas_upsell' && t.producto){
-      var upProd = (d.products||[]).find(function(p){ return p.id === t.producto; });
-      if(upProd && upProd.campaignData){
-        var cdUpsells = upProd.campaignData.upsells || [];
-        var cdEmpty = cdUpsells.every(function(u){ return !u.link && !u.nombre; });
-        if(cdEmpty && t.links && t.links.some(function(u){ return u && u.trim(); })){
-          upProd.campaignData.upsells = t.links.filter(function(u){ return u && u.trim(); }).map(function(u){ return { nombre:'', link:u }; });
-          if(upProd.campaignData.upsells.length===0) upProd.campaignData.upsells = [{nombre:'',link:''}];
-        }
       }
     }
   });
@@ -1798,6 +1785,7 @@ function renderApp(){
   renderAnunciosList();
   renderAnaliticas();
   renderWeekBoard();
+  renderTaskArchive();
   renderTutorialCourse();
 }
 function taskTypeById(id){ return TASK_CATALOG.find(function(t){ return t.id === id; }); }
@@ -1805,6 +1793,61 @@ function productLabel(pid){
   if(!pid) return '';
   var p = findProduct(pid);
   return p ? p.name + ' · ' + phaseLabel(p.phase) : '';
+}
+/* Construye un resumen compacto (no la tarea completa) con los links/textos
+   que tenía la tarea, para no perder esa información cuando se quita. */
+function buildTaskArchiveSummary(t){
+  var type = taskTypeById(t.taskTypeId);
+  var parts = [];
+  function pushVal(label, val){
+    if(val === undefined || val === null) return;
+    if(typeof val === 'string'){
+      var v = val.trim();
+      if(v) parts.push(label+': '+(v.length>50 ? v.slice(0,50)+'…' : v));
+    } else if(typeof val === 'boolean'){
+      if(val) parts.push(label);
+    } else if(Array.isArray(val)){
+      val.forEach(function(item, i){
+        if(typeof item === 'string'){ pushVal(label+' '+(i+1), item); }
+        else if(item && typeof item === 'object'){
+          Object.keys(item).forEach(function(k){ pushVal(label+' '+(i+1)+' '+k, item[k]); });
+        }
+      });
+    } else if(typeof val === 'object'){
+      Object.keys(val).forEach(function(k){ pushVal(label+' '+k, val[k]); });
+    }
+  }
+  pushVal('Links', t.links);
+  pushVal('Archivos', t.linksArchivos);
+  pushVal('Texto anuncio', t.textoAnuncio);
+  pushVal('Frase activadora', t.fraseActivadora);
+  pushVal('Sendy', t.sendyAccounts);
+  var resumen = parts.join(' · ');
+  if(resumen.length > 240) resumen = resumen.slice(0,240)+'…';
+  return {
+    id: uid('arch'),
+    taskLabel: type ? type.label : t.taskTypeId,
+    assignee: t.assignee,
+    fecha: t.fecha,
+    producto: t.producto ? productLabel(t.producto) : '',
+    removedAt: nowLabel(),
+    resumen: resumen || '(sin links ni textos guardados)'
+  };
+}
+function renderTaskArchive(){
+  var wrap = document.getElementById('taskArchiveList');
+  if(!wrap) return;
+  var arch = db.weekTasksArchive || [];
+  wrap.innerHTML = arch.map(function(a){
+    return '<div class="hist-item" style="align-items:flex-start;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-weight:700;font-size:.82rem;">'+esc(a.taskLabel)+' — '+esc(a.assignee)+(a.producto?' · '+esc(a.producto):'')+'</div>' +
+        '<div style="font-size:.74rem;color:var(--text2);margin-top:2px;">'+esc(a.resumen)+'</div>' +
+      '</div>' +
+      '<span class="t">'+esc(a.removedAt)+'</span>' +
+      '<button class="btn-danger-out" data-action="delArchivedTask" data-archid="'+a.id+'" style="margin-left:8px;flex-shrink:0;">✕</button>' +
+    '</div>';
+  }).join('') || '<div class="empty-msg">Sin tareas archivadas todavía.</div>';
 }
 function renderWeekBoard(){
   var filterPerson = document.getElementById('taskPersonFilter').value;
@@ -1899,11 +1942,7 @@ function taskCardHTML(t){
     bodyHTML = productoSelectBlockD + fechaBlock + compraBody + statusBlock;
 
   } else if(t.taskTypeId === 'ideas_upsell'){
-    var productoSelectBlockU = productoSelectBlockFor(t);
-    var prodU = t.producto ? findProduct(t.producto) : null;
-    var upsellBody = prodU ? upsellFieldsBlock(prodU) :
-      taskLinksBlock(t, 'links', 'Upsells', 'Link del Upsell');
-    bodyHTML = productoSelectBlockU + fechaBlock + upsellBody + statusBlock;
+    bodyHTML = fechaBlock + statusBlock + upsellLinksBlock(t);
 
   } else {
     var linksBlockDefault = taskLinksBlock(t, 'links', 'Links', type.linkLabel||'Link');
@@ -1918,6 +1957,19 @@ function taskCardHTML(t){
     bodyHTML +
     '<button class="btn-danger-out tdel" data-action="delWeekTask" data-wtid="'+t.id+'">✕ Quitar tarea</button>' +
   '</div>';
+}
+function upsellLinksBlock(t){
+  var arr = t.links && t.links.length ? t.links : [''];
+  var rows = arr.map(function(u, idx){
+    return '<div class="spy-entry">' +
+      '<div class="spy-entry-head"><span>Upsell '+(idx+1)+'</span>' +
+        (u ? '<button class="mini-open" data-action="openLink" data-val="'+esc(u)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
+        (arr.length>1 ? '<button class="mini-del" data-action="delTaskArr" data-wtid="'+t.id+'" data-arr="links" data-idx="'+idx+'">✕</button>' : '') +
+      '</div>' +
+      '<input type="text" placeholder="Link del Upsell '+(idx+1)+'" value="'+esc(u)+'" data-wt="'+t.id+'" data-field="links.'+idx+'">' +
+    '</div>';
+  }).join('');
+  return '<label>Upsells</label>' + rows + '<button class="btn-ghost add-link-btn" data-action="addTaskArr" data-wtid="'+t.id+'" data-arr="links" style="width:100%;margin-top:2px;">+ Agregar Upsell</button>';
 }
 function taskLinksBlock(t, field, label, placeholder){
   var arr = getDeep(t, field);
@@ -1984,20 +2036,6 @@ function compraDigitalFieldsBlock(p){
     cdText(p, 'cuentaSendy', 'Cuenta de Sendy', 'Ej: equipo@dominio.com') +
     cdText(p, 'correoSendy', 'Correo de Sendy', 'Ej: equipo@dominio.com') +
     cdTextarea(p, 'textoBienvenida', 'Texto de bienvenida', 'Escribe aquí el texto de bienvenida / agradecimiento');
-}
-function upsellFieldsBlock(p){
-  var arr = p.campaignData.upsells && p.campaignData.upsells.length ? p.campaignData.upsells : [{nombre:'',link:''}];
-  var rows = arr.map(function(u, idx){
-    return '<div class="spy-entry">' +
-      '<div class="spy-entry-head"><span>Upsell '+(idx+1)+'</span>' + (arr.length>1 ? '<button class="mini-del" data-action="delUpsell" data-pid="'+p.id+'" data-idx="'+idx+'">✕</button>' : '') + '</div>' +
-      '<label>Nombre del Upsell</label><input type="text" placeholder="Ej: Pack devocional extra" value="'+esc(u.nombre)+'" data-pid="'+p.id+'" data-field="campaignData.upsells.'+idx+'.nombre">' +
-      '<label>Link del Upsell</label><div class="boardlink-row"><input type="text" placeholder="Link del Upsell '+(idx+1)+'" value="'+esc(u.link)+'" data-pid="'+p.id+'" data-field="campaignData.upsells.'+idx+'.link">' +
-        (u.link ? '<button class="mini-open" data-action="openLink" data-val="'+esc(u.link)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
-      '</div>' +
-    '</div>';
-  }).join('');
-  return '<label>Nombre del producto</label><input type="text" value="'+esc(p.name)+'" disabled>' +
-    '<label>Upsells</label>' + rows + '<button class="btn-ghost add-link-btn" data-action="addUpsell" data-pid="'+p.id+'">+ Agregar Upsell</button>';
 }
 function spyEntriesBlock(t){
   var ids = t.spyIds || [];
@@ -2206,19 +2244,6 @@ document.addEventListener('click', function(e){
     if(arrRef.length===0) arrRef.push('');
     saveDB(); renderApp();
   }
-  if(action === 'addUpsell'){
-    var pAU = findProduct(pid);
-    if(!pAU.campaignData.upsells) pAU.campaignData.upsells = [];
-    pAU.campaignData.upsells.push({nombre:'',link:''});
-    saveDB(); renderApp();
-  }
-  if(action === 'delUpsell'){
-    var pDU = findProduct(pid);
-    var idxDU = parseInt(el.getAttribute('data-idx'),10);
-    pDU.campaignData.upsells.splice(idxDU,1);
-    if(pDU.campaignData.upsells.length===0) pDU.campaignData.upsells.push({nombre:'',link:''});
-    saveDB(); renderApp();
-  }
 });
 
 document.getElementById('globalSearch').addEventListener('input', function(e){
@@ -2287,8 +2312,21 @@ document.addEventListener('click', function(e){
 
   if(action === 'delWeekTask'){
     var wtid = el.getAttribute('data-wtid');
+    var taskToRemove = db.weekTasks.find(function(t){ return t.id === wtid; });
+    if(taskToRemove){
+      if(!db.weekTasksArchive) db.weekTasksArchive = [];
+      var arch = buildTaskArchiveSummary(taskToRemove);
+      db.weekTasksArchive.unshift(arch);
+      if(db.weekTasksArchive.length > 200) db.weekTasksArchive.length = 200;
+      log('Tarea archivada: '+arch.taskLabel, taskToRemove.assignee);
+    }
     db.weekTasks = db.weekTasks.filter(function(t){ return t.id !== wtid; });
-    saveDB(); renderWeekBoard();
+    saveDB(); renderWeekBoard(); renderTaskArchive();
+  }
+  if(action === 'delArchivedTask'){
+    var archId = el.getAttribute('data-archid');
+    db.weekTasksArchive = (db.weekTasksArchive||[]).filter(function(a){ return a.id !== archId; });
+    saveDB(); renderTaskArchive();
   }
   if(action === 'toggleRound'){
     var wtid2 = el.getAttribute('data-wtid');
