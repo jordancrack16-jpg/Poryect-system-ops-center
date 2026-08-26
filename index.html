@@ -1327,7 +1327,7 @@ function renderTesteo(){
   var list = db.products.filter(function(p){ return p.phase === 'testeo'; });
 
   document.getElementById('adsTable').innerHTML =
-    '<thead><tr><th>Producto</th><th>Precio</th><th>Anuncios</th><th># Anuncios</th><th>Inversión</th><th>Fecha de testeo</th><th>BM</th><th>Cuenta publicitaria</th><th>Sendy</th><th>Frase activadora</th><th>Flujo</th></tr></thead><tbody>' +
+    '<thead><tr><th>Producto</th><th>Precio</th><th>Anuncios</th><th># Anuncios</th><th>Inversión</th><th>Fecha de testeo</th><th>BM</th><th>Cuenta publicitaria</th><th>Sendy</th><th>Frase activadora</th><th>Flujo</th><th></th></tr></thead><tbody>' +
     (list.map(function(p){
       var inversion = (parseFloat(p.ads.count)||0) * 2;
       return '<tr>' +
@@ -1342,8 +1342,9 @@ function renderTesteo(){
         '<td>'+adsSendyCell(p)+'</td>' +
         '<td style="min-width:180px;"><textarea placeholder="Frase activadora" data-pid="'+p.id+'" data-field="ads.textoPrincipal" style="min-height:44px;">'+esc(p.ads.textoPrincipal)+'</textarea></td>' +
         '<td><select data-pid="'+p.id+'" data-field="funnel.testeoEstado">'+selOpts(['pendiente','en_proceso','activo'], p.funnel.testeoEstado, {pendiente:'Pendiente',en_proceso:'En proceso',activo:'Listo'})+'</select></td>' +
+        '<td><button class="btn-green-out" data-action="moveToOptimizacion" data-pid="'+p.id+'" style="white-space:nowrap;">APROBADO PARA OPTIMIZACIÓN</button></td>' +
       '</tr>';
-    }).join('') || '<tr><td colspan="11" class="empty-msg">No hay productos en testeo</td></tr>') + '</tbody>';
+    }).join('') || '<tr><td colspan="12" class="empty-msg">No hay productos en testeo</td></tr>') + '</tbody>';
 }
 function adsSendyCell(p){
   return '<div class="boardlinks-wrap">' +
