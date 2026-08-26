@@ -1827,10 +1827,13 @@ function buildTaskArchiveEntry(t){
   };
 }
 /* Convierte la tarea completa en una lista plana de etiqueta:valor, para
-   mostrar TODOS los datos guardados, sin importar el tipo de tarea que sea. */
+   mostrar TODOS los datos guardados, sin importar el tipo de tarea que sea.
+   Tolerante a undefined/null/objetos vacíos/estructuras antiguas (ej. datos
+   que llegan de Supabase o de un backup local con formato distinto). */
 function flattenTaskData(obj, prefix, out){
   out = out || [];
-  Object.keys(obj).forEach(function(k){
+  if(obj === undefined || obj === null || typeof obj !== 'object') return out;
+  Object.keys(obj || {}).forEach(function(k){
     if(ARCHIVE_HIDDEN_FIELDS.indexOf(k) > -1) return;
     var val = obj[k];
     var label = prefix ? prefix+' → '+k : k;
@@ -1840,6 +1843,7 @@ function flattenTaskData(obj, prefix, out){
         if(item === '' || item === undefined || item === null) return;
         if(typeof item === 'string'){ out.push({ l: label+' '+(i+1), v: item }); }
         else if(typeof item === 'object'){ flattenTaskData(item, label+' '+(i+1), out); }
+        else { out.push({ l: label+' '+(i+1), v: String(item) }); }
       });
     } else if(typeof val === 'object'){
       flattenTaskData(val, label, out);
@@ -1852,28 +1856,31 @@ function flattenTaskData(obj, prefix, out){
   return out;
 }
 function archiveCardHTML(a){
-  var rows = flattenTaskData(a.fullTask, '');
+  a = a || {};
+  var rows = flattenTaskData(a.fullTask || {}, '');
   var detailsHtml = rows.map(function(r){
     return '<div class="kv" style="margin-bottom:6px;"><div class="l">'+esc(r.l)+'</div><div class="v" style="font-weight:500;font-size:.8rem;word-break:break-word;">'+esc(r.v)+'</div></div>';
   }).join('') || '<div class="empty-msg">Esta tarea no tenía datos cargados.</div>';
 
+  var archId = a.id || uid('arch');
   return '<div class="task-card">' +
-    '<div class="ttype">'+esc(a.taskLabel)+'</div>' +
-    '<div class="tmeta"><span>📅 '+esc(a.fecha||'—')+'</span><span>Archivada: '+esc(a.removedAt)+'</span></div>' +
+    '<div class="ttype">'+esc(a.taskLabel||'Tarea')+'</div>' +
+    '<div class="tmeta"><span>📅 '+esc(a.fecha||'—')+'</span><span>Archivada: '+esc(a.removedAt||'—')+'</span></div>' +
     (a.producto ? '<div class="tprod">🔗 '+esc(a.producto)+'</div>' : '') +
-    '<button class="btn-ghost" style="width:100%;margin-top:8px;" data-action="toggleArchiveDetails" data-archid="'+a.id+'" id="archbtn_'+a.id+'">Ver todos los datos ▾</button>' +
-    '<div id="archdetail_'+a.id+'" style="display:none;margin-top:10px;">'+detailsHtml+'</div>' +
-    '<button class="btn-danger-out tdel" data-action="delArchivedTask" data-archid="'+a.id+'">✕ Eliminar del archivo</button>' +
+    '<button class="btn-ghost" style="width:100%;margin-top:8px;" data-action="toggleArchiveDetails" data-archid="'+archId+'" id="archbtn_'+archId+'">Ver todos los datos ▾</button>' +
+    '<div id="archdetail_'+archId+'" style="display:none;margin-top:10px;">'+detailsHtml+'</div>' +
+    '<button class="btn-danger-out tdel" data-action="delArchivedTask" data-archid="'+archId+'">✕ Eliminar del archivo</button>' +
   '</div>';
 }
 function renderTaskArchive(){
   var wrap = document.getElementById('taskArchiveList');
   if(!wrap) return;
-  var arch = db.weekTasksArchive || [];
+  var arch = Array.isArray(db.weekTasksArchive) ? db.weekTasksArchive : [];
   if(arch.length === 0){ wrap.innerHTML = '<div class="empty-msg">Sin tareas archivadas todavía.</div>'; return; }
 
   var byDay = {};
   arch.forEach(function(a){
+    if(!a || typeof a !== 'object') return; // tolera entradas antiguas/corruptas sin tumbar el render
     var dayKey = (a.day !== undefined && a.day !== null) ? String(a.day) : 'sd';
     if(!byDay[dayKey]) byDay[dayKey] = {};
     var person = a.assignee || 'Sin asignar';
@@ -1881,17 +1888,19 @@ function renderTaskArchive(){
     byDay[dayKey][person].push(a);
   });
 
-  var dayKeys = Object.keys(byDay).sort(function(x,y){
+  var dayKeys = Object.keys(byDay || {}).sort(function(x,y){
     if(x==='sd') return 1; if(y==='sd') return -1;
     return parseInt(x,10) - parseInt(y,10);
   });
 
+  if(dayKeys.length === 0){ wrap.innerHTML = '<div class="empty-msg">Sin tareas archivadas todavía.</div>'; return; }
+
   wrap.innerHTML = dayKeys.map(function(dk){
-    var dayLabel = dk==='sd' ? 'Sin día registrado' : DAY_LABELS[parseInt(dk,10)];
-    var persons = byDay[dk];
+    var dayLabel = dk==='sd' ? 'Sin día registrado' : (DAY_LABELS[parseInt(dk,10)] || 'Sin día registrado');
+    var persons = byDay[dk] || {};
     var totalDay = Object.keys(persons).reduce(function(sum,p){ return sum + persons[p].length; }, 0);
     var personBlocks = Object.keys(persons).map(function(person){
-      var tasks = persons[person];
+      var tasks = persons[person] || [];
       return '<div class="person-folder">' +
         '<div class="person-folder-head"><span class="avatar">'+person.slice(0,2).toUpperCase()+'</span><h4>'+esc(person)+'</h4><span class="cnt">'+tasks.length+' tarea(s)</span></div>' +
         '<div class="person-tasks-grid">'+tasks.map(archiveCardHTML).join('')+'</div>' +
