@@ -520,9 +520,11 @@ async function loadProfileAndEnter(user){
     }
     currentProfile = { id: res.data.id, full_name: res.data.full_name, role: res.data.role, email: user.email };
     renderProfileDisplay();
+    console.log('✅ Perfil cargado');
 
     /* --- Cargar ops_center_state.data como fuente principal ANTES de renderizar --- */
     showAuthScreen('loadingScreen');
+    console.log('⏳ Cargando DB desde Supabase');
     try{
       await loadDBFromSupabase();
     }catch(dbErr){
@@ -534,13 +536,26 @@ async function loadProfileAndEnter(user){
       }
       return;
     }
+    console.log('✅ DB cargada');
 
+    console.log('⏳ Ejecutando showApp');
     showApp();
+    console.log('⏳ Ejecutando renderApp');
     renderApp(); // ahora con db proveniente de Supabase (ops_center_state)
+    console.log('✅ renderApp terminado');
+    console.log('⏳ Activando Realtime');
     subscribeRealtime();
+    console.log('✅ Realtime activado');
     setCloudStatus('synced');
   }catch(err){
-    setLoginError('No se pudo conectar con Supabase. Intenta de nuevo.');
+    console.error('ERROR REAL EN loadProfileAndEnter:', err);
+    console.error('STACK:', err && err.stack ? err.stack : 'Sin stack');
+
+    setLoginError(
+      'Error interno de OPS CENTER: ' +
+      (err && err.message ? err.message : 'Error desconocido')
+    );
+
     showAuthScreen('loginScreen');
   }
 }
