@@ -668,6 +668,7 @@ function emptyProduct(name, country, niche, responsible){
     optDays: [],
     optimizacionDays: [],
     testeoAprobado: false,
+    diasAprobados: false,
     campaignLaunchStatus: 'pendiente',
     activadorFlujos: '',
     sendyAccount: { cuenta:'', correo:'', contrasena:'', link:'' },
@@ -1029,6 +1030,7 @@ function migrateDB(d){
     delete p.checklist.observaciones;
 
     if(p.testeoAprobado === undefined) p.testeoAprobado = false;
+    if(p.diasAprobados === undefined) p.diasAprobados = false;
     if(!Array.isArray(p.optimizacionDays)) p.optimizacionDays = [];
 
     delete p.scale.errores;
@@ -1420,7 +1422,10 @@ function renderTesteo(){
         '<td>'+adsSendyCell(p)+'</td>' +
         '<td style="min-width:180px;"><textarea placeholder="Frase activadora" data-pid="'+p.id+'" data-field="ads.textoPrincipal" style="min-height:44px;">'+esc(p.ads.textoPrincipal)+'</textarea></td>' +
         '<td><select data-pid="'+p.id+'" data-field="funnel.testeoEstado">'+selOpts(['pendiente','en_proceso','activo'], p.funnel.testeoEstado, {pendiente:'Pendiente',en_proceso:'En proceso',activo:'Listo'})+'</select></td>' +
-        '<td><button class="btn-green-out" data-action="moveToOptimizacion" data-pid="'+p.id+'" style="white-space:nowrap;">APROBADO PARA OPTIMIZACIÓN</button></td>' +
+        '<td>' + (p.diasAprobados
+          ? '<span class="tag green" style="white-space:nowrap;">Enviado a Testeo (tablero) ✓</span>'
+          : '<button class="btn-green-out" data-action="habilitarDiasTesteo" data-pid="'+p.id+'" style="white-space:nowrap;">APROBADO PARA OPTIMIZACIÓN</button>'
+        ) + '</td>' +
       '</tr>';
     }).join('') || '<tr><td colspan="12" class="empty-msg">No hay productos en testeo</td></tr>') + '</tbody>';
 }
@@ -1707,7 +1712,7 @@ function testeoDaysTable(p){
     '<tbody>'+(rows||'<tr><td colspan="12" class="empty-msg">Sin días registrados aún</td></tr>')+'</tbody></table>';
 }
 function renderTesteoBoard(){
-  var list = db.products.filter(function(p){ return p.phase === 'optimizacion'; });
+  var list = db.products.filter(function(p){ return p.phase === 'testeo' && p.diasAprobados; });
   var wrap = document.getElementById('testeoBoardList');
   if(!wrap) return;
   wrap.innerHTML = list.map(function(p){
@@ -2502,7 +2507,12 @@ document.addEventListener('click', function(e){
   }
 
   if(action === 'moveToTesteo'){ var p1 = findProduct(pid); p1.phase='testeo'; log('Producto movido de fase a Testeo', p1.name); saveDB(); renderApp(); toast(p1.name+' movido a Testeo'); }
-  if(action === 'moveToOptimizacion'){ var p2 = findProduct(pid); p2.phase='optimizacion'; log('Producto movido de fase a Optimización', p2.name); saveDB(); renderApp(); toast(p2.name+' movido a Optimización'); }
+  if(action === 'habilitarDiasTesteo'){
+    var p2 = findProduct(pid);
+    p2.diasAprobados = true;
+    log('Producto enviado al tablero de Testeo (por días)', p2.name);
+    saveDB(); renderApp(); toast(p2.name+' — enviado al tablero de Testeo, sigue en Pre-Testeo también');
+  }
   if(action === 'approveScale'){
     var p3 = findProduct(pid);
     var tareas3 = p3.checklist.optimizacionTareas;
@@ -2516,8 +2526,9 @@ document.addEventListener('click', function(e){
   }
   if(action === 'approveForOptimizacion'){
     var pAO = findProduct(pid);
+    pAO.phase = 'optimizacion';
     pAO.testeoAprobado = true;
-    log('Producto aprobado para optimización (desde Testeo)', pAO.name);
+    log('Producto movido de fase a Optimización', pAO.name);
     saveDB(); renderApp(); toast(pAO.name+' — resumen enviado a Optimización');
   }
   if(action === 'addOptimizacionDay'){
