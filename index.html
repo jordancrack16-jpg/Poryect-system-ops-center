@@ -666,11 +666,13 @@ function emptyProduct(name, country, niche, responsible){
     campaignDecision: 'pendiente',
     opt: { fecha:'', pais: country || '', gasto:'', mensajes:'', compras:'' },
     optDays: [],
+    optimizacionDays: [],
+    testeoAprobado: false,
     campaignLaunchStatus: 'pendiente',
     activadorFlujos: '',
     sendyAccount: { cuenta:'', correo:'', contrasena:'', link:'' },
     conversion: { mensajes:'', compras:'' },
-    checklist: { productoDigital:false, productoDigitalLink:'', comentariosPositivos:false, pixelConfigurado:false, upsell:false, sendyConfigurado:false, flujoOptimizado:false },
+    checklist: { productoDigital:false, productoDigitalLink:'', optimizacionTareas:{ necesitaFlujo:false, flujoMejorado:false, necesitaCreativos:false, creativosTesteados:0, creativosGanadores:0 } },
     scale: {
       campaigns: [], cbo:{ funciona:'testeando', presupuesto:'', cantidadCbo:0, anunciosActivos:0, anunciosEnCbo:0 },
       resumen:{ hoy:{gasto:'',facturacion:''}, ayer:{gasto:'',facturacion:''}, semana:{gasto:'',facturacion:''} },
@@ -950,7 +952,7 @@ function migrateDB(d){
       p.funnel = { responsible:'Jesús', country:p.country||'', status:'pendiente', linkFlujo:'', linkDrive:'', observaciones:'', testeoEstado:'pendiente' };
     }
     if(!p.checklist || typeof p.checklist !== 'object'){
-      p.checklist = { productoDigital:false, productoDigitalLink:'', comentariosPositivos:false, pixelConfigurado:false, upsell:false, sendyConfigurado:false, flujoOptimizado:false };
+      p.checklist = { productoDigital:false, productoDigitalLink:'', optimizacionTareas:{ necesitaFlujo:false, flujoMejorado:false, necesitaCreativos:false, creativosTesteados:0, creativosGanadores:0 } };
     }
     if(!p.scale || typeof p.scale !== 'object'){
       p.scale = { campaigns:[], cbo:{ funciona:'testeando', presupuesto:'', cantidadCbo:0, anunciosActivos:0, anunciosEnCbo:0 }, resumen:{ hoy:{gasto:'',facturacion:''}, ayer:{gasto:'',facturacion:''}, semana:{gasto:'',facturacion:''} }, upsells:[], anunciosGanadores:[], driveGanadoresGeneral:'' };
@@ -1005,10 +1007,28 @@ function migrateDB(d){
         : [];
     }
     if(p.checklist.productoDigitalLink === undefined) p.checklist.productoDigitalLink = '';
-    if(p.checklist.pixelConfigurado === undefined) p.checklist.pixelConfigurado = false;
+    if(!p.checklist.optimizacionTareas || typeof p.checklist.optimizacionTareas !== 'object'){
+      p.checklist.optimizacionTareas = { necesitaFlujo:false, flujoMejorado:false, necesitaCreativos:false, creativosTesteados:0, creativosGanadores:0 };
+    } else {
+      if(p.checklist.optimizacionTareas.necesitaFlujo === undefined) p.checklist.optimizacionTareas.necesitaFlujo = false;
+      if(p.checklist.optimizacionTareas.flujoMejorado === undefined) p.checklist.optimizacionTareas.flujoMejorado = false;
+      if(p.checklist.optimizacionTareas.necesitaCreativos === undefined) p.checklist.optimizacionTareas.necesitaCreativos = false;
+      if(p.checklist.optimizacionTareas.creativosTesteados === undefined) p.checklist.optimizacionTareas.creativosTesteados = 0;
+      if(p.checklist.optimizacionTareas.creativosGanadores === undefined) p.checklist.optimizacionTareas.creativosGanadores = 0;
+    }
+    /* Estos campos del checklist viejo ya no se usan en la interfaz — se
+       eliminan tal como se pidió, sin tocar productoDigital/productoDigitalLink. */
+    delete p.checklist.comentariosPositivos;
+    delete p.checklist.pixelConfigurado;
+    delete p.checklist.upsell;
+    delete p.checklist.sendyConfigurado;
+    delete p.checklist.flujoOptimizado;
     delete p.checklist.cantidadUpsells;
     delete p.checklist.upsellConvierte;
     delete p.checklist.observaciones;
+
+    if(p.testeoAprobado === undefined) p.testeoAprobado = false;
+    if(!Array.isArray(p.optimizacionDays)) p.optimizacionDays = [];
 
     delete p.scale.errores;
     p.scale.upsells.forEach(function(u){
@@ -1252,10 +1272,8 @@ function buildCommandItems(){
   if(needFunnel>0) items.push(cmdRow(needFunnel+' producto(s) necesitan flujo', 'warn'));
 
   var highCpa = db.products.filter(function(p){
-    if(p.phase!=='optimizacion') return false;
-    var facturacion = (parseFloat(p.opt.compras)||0) * 2;
-    var gananciaNeta = facturacion - (parseFloat(p.opt.gasto)||0);
-    return gananciaNeta < 0;
+    if(p.phase!=='optimizacion' || !p.testeoAprobado) return false;
+    return sumDays(p.optimizacionDays).gananciaNeta < 0;
   }).length;
   if(highCpa>0) items.push(cmdRow(highCpa+' producto(s) con ganancia negativa en optimización', 'crit'));
 
@@ -1263,11 +1281,12 @@ function buildCommandItems(){
   if(readyForOpt>0) items.push(cmdRow(readyForOpt+' producto(s) listo(s) para optimización', 'ok'));
 
   var readyForScale = db.products.filter(function(p){
-    if(p.phase!=='optimizacion') return false;
-    var okChecklist = p.checklist.productoDigital && p.checklist.comentariosPositivos && p.checklist.pixelConfigurado && p.checklist.sendyConfigurado && p.checklist.flujoOptimizado;
-    var factP = (parseFloat(p.opt.compras)||0)*2;
-    var gananciaP = factP - (parseFloat(p.opt.gasto)||0);
-    return okChecklist && gananciaP > 0;
+    if(p.phase!=='optimizacion' || !p.testeoAprobado) return false;
+    var t = p.checklist.optimizacionTareas;
+    var flujoOk = !t.necesitaFlujo || t.flujoMejorado;
+    var creativosOk = !t.necesitaCreativos || (parseFloat(t.creativosGanadores)||0) > 0;
+    var okChecklist = p.checklist.productoDigital && flujoOk && creativosOk;
+    return okChecklist && sumDays(p.optimizacionDays).gananciaNeta > 0;
   }).length;
   if(readyForScale>0) items.push(cmdRow(readyForScale+' producto(s) listo(s) para escala', 'ok'));
 
@@ -1360,7 +1379,7 @@ function multiLinksEditor(p, arrField){
   return '<div class="boardlinks-wrap">'+items+'<button class="btn-ghost add-link-btn" data-action="addLinkArr" data-pid="'+p.id+'" data-arr="'+arrField+'">+ link</button></div>';
 }
 function field(label, type, p, key, disabled){
-  return '<div class="field"><label>'+label+'</label><input type="'+type+'" value="'+esc(p[key])+'" data-pid="'+p.id+'" data-field="'+key+'"'+(type==='number'?' data-type="number"':'')+(disabled?' disabled':'')+'></div>';
+  return '<div class="field"><label>'+label+'</label><input type="'+type+'" value="'+esc(getDeep(p,key))+'" data-pid="'+p.id+'" data-field="'+key+'"'+(type==='number'?' data-type="number"':'')+(disabled?' disabled':'')+'></div>';
 }
 function selField(label, p, key, opts){
   return '<div class="field"><label>'+label+'</label><select data-pid="'+p.id+'" data-field="'+key+'">'+selOpts(opts, p[key])+'</select></div>';
@@ -1441,6 +1460,78 @@ function sendyCell(p){
   '</div>';
 }
 
+function sumDays(days){
+  days = Array.isArray(days) ? days : [];
+  var gasto=0, mensajes=0, compras=0, fechaMin=null, fechaMax=null;
+  days.forEach(function(d){
+    gasto += parseFloat(d.gasto)||0;
+    mensajes += parseFloat(d.mensajes)||0;
+    compras += parseFloat(d.compras)||0;
+    if(d.fecha){
+      if(!fechaMin || d.fecha < fechaMin) fechaMin = d.fecha;
+      if(!fechaMax || d.fecha > fechaMax) fechaMax = d.fecha;
+    }
+  });
+  var facturacion = compras*2;
+  var gananciaNeta = facturacion - gasto;
+  return {
+    gasto:gasto, mensajes:mensajes, compras:compras, facturacion:facturacion, gananciaNeta:gananciaNeta,
+    conv: safeDiv(compras,mensajes)*100, cpm: safeDiv(gasto,mensajes), cpc: safeDiv(gasto,compras), roas: safeDiv(facturacion,gasto),
+    fechaInicio: fechaMin, fechaFin: fechaMax, dias: days.length
+  };
+}
+function nextDayAfter(days){
+  var arr = Array.isArray(days) ? days : [];
+  var maxDate = null;
+  arr.forEach(function(d){ if(d.fecha && (!maxDate || d.fecha > maxDate)) maxDate = d.fecha; });
+  if(!maxDate) return today();
+  var dt = new Date(maxDate+'T00:00:00');
+  if(isNaN(dt.getTime())) return today();
+  dt.setDate(dt.getDate()+1);
+  return dt.toISOString().slice(0,10);
+}
+function summaryKvBlock(sum, titulo){
+  var rango = (sum.fechaInicio && sum.fechaFin) ? (sum.fechaInicio === sum.fechaFin ? sum.fechaInicio : sum.fechaInicio+' → '+sum.fechaFin) : '—';
+  return '<div class="kv-grid" style="margin-bottom:14px;">' +
+    kv('Rango de fechas ('+sum.dias+' día(s))', rango) +
+    kv('Gasto total', '$'+fmt(sum.gasto)) +
+    kv('Mensajes totales', sum.mensajes) +
+    kv('Compras totales', sum.compras) +
+    kv('Facturación', '$'+fmt(sum.facturacion)) +
+    kv('Ganancia neta', '$'+fmt(sum.gananciaNeta)) +
+    kv('% Conversión', fmtPct(sum.conv)+'%') +
+    kv('Costo/mensaje', '$'+fmt(sum.cpm)) +
+    kv('Costo/compra', '$'+fmt(sum.cpc)) +
+    kv('ROAS', fmt(sum.roas)+'x') +
+  '</div>';
+}
+function optimizacionDaysTable(p){
+  var days = p.optimizacionDays || [];
+  days.sort(function(a,b){ return (a.fecha||'').localeCompare(b.fecha||''); });
+  var rows = days.map(function(d, idx){
+    var gasto = parseFloat(d.gasto)||0, mensajes = parseFloat(d.mensajes)||0, compras = parseFloat(d.compras)||0;
+    var facturacion = compras*2, gananciaNeta = facturacion-gasto, conv = safeDiv(compras,mensajes)*100;
+    var cpm = safeDiv(gasto,mensajes), cpc = safeDiv(gasto,compras), roas = safeDiv(facturacion,gasto);
+    return '<tr>' +
+      '<td><input type="date" value="'+esc(d.fecha)+'" data-pid="'+p.id+'" data-field="optimizacionDays.'+idx+'.fecha"></td>' +
+      '<td><input type="text" value="'+esc(d.pais)+'" data-pid="'+p.id+'" data-field="optimizacionDays.'+idx+'.pais" style="width:90px;"></td>' +
+      '<td><input type="text" value="'+esc(d.cuentaPublicitaria)+'" data-pid="'+p.id+'" data-field="optimizacionDays.'+idx+'.cuentaPublicitaria" style="width:110px;"></td>' +
+      '<td><input type="text" value="'+esc(d.bm)+'" data-pid="'+p.id+'" data-field="optimizacionDays.'+idx+'.bm" style="width:100px;"></td>' +
+      '<td><input type="number" value="'+d.gasto+'" data-pid="'+p.id+'" data-field="optimizacionDays.'+idx+'.gasto" data-type="number" style="width:80px;"></td>' +
+      '<td><input type="number" value="'+d.mensajes+'" data-pid="'+p.id+'" data-field="optimizacionDays.'+idx+'.mensajes" data-type="number" style="width:80px;"></td>' +
+      '<td><input type="number" value="'+d.compras+'" data-pid="'+p.id+'" data-field="optimizacionDays.'+idx+'.compras" data-type="number" style="width:80px;"></td>' +
+      '<td>$'+fmt(facturacion)+'</td>' +
+      '<td>$'+fmt(gananciaNeta)+'</td>' +
+      '<td>'+fmtPct(conv)+'%</td>' +
+      '<td>$'+fmt(cpm)+'</td>' +
+      '<td>$'+fmt(cpc)+'</td>' +
+      '<td>'+fmt(roas)+'x</td>' +
+      '<td><button class="btn-danger-out" data-action="delArrItem" data-pid="'+p.id+'" data-arr="optimizacionDays" data-idx="'+idx+'">✕</button></td>' +
+    '</tr>';
+  }).join('');
+  return '<table><thead><tr><th>Fecha</th><th>País</th><th>Cuenta publicitaria</th><th>BM</th><th>Gasto</th><th>Mensajes</th><th>Compras</th><th>Facturación</th><th>Ganancia neta</th><th>% Conv.</th><th>Costo/msj</th><th>Costo/compra</th><th>ROAS</th><th></th></tr></thead>' +
+    '<tbody>'+(rows||'<tr><td colspan="14" class="empty-msg">Sin días de optimización aún</td></tr>')+'</tbody></table>';
+}
 function statusColor(val, ideal){
   if(!ideal) return 'gray';
   var ratio = val / ideal;
@@ -1452,31 +1543,52 @@ function renderOptimizacion(){
   var list = (db.products || []).filter(function(p){ return p.phase === 'optimizacion'; });
 
   document.getElementById('optChecklists').innerHTML = list.map(function(p){
-    var gasto = parseFloat(p.opt.gasto)||0;
-    var facturacion = (parseFloat(p.opt.compras)||0) * 2;
-    var gananciaNeta = facturacion - gasto;
-    var positivo = gananciaNeta > 0;
-    var allChecked = p.checklist.productoDigital && p.checklist.comentariosPositivos && p.checklist.pixelConfigurado && p.checklist.sendyConfigurado && p.checklist.flujoOptimizado;
-    var readyForScale = allChecked && positivo;
+    if(!p.testeoAprobado){
+      return '<div class="prep-card">' +
+        '<div class="head"><h3><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></h3></div>' +
+        '<div class="empty-msg">Todavía no fue aprobado para optimización desde el tablero de Testeo. Ve a <b>Testeo</b> y presiona "Aprobar para optimización" en este producto.</div>' +
+      '</div>';
+    }
+
+    var testSum = sumDays(p.optDays);
+    var optSum = sumDays(p.optimizacionDays);
+    var positivo = optSum.gananciaNeta > 0;
+    var tareas = p.checklist.optimizacionTareas;
+    var flujoOk = !tareas.necesitaFlujo || tareas.flujoMejorado;
+    var creativosOk = !tareas.necesitaCreativos || (parseFloat(tareas.creativosGanadores)||0) > 0;
+    var readyForScale = p.checklist.productoDigital && flujoOk && creativosOk && positivo;
 
     return '<div class="prep-card">' +
       '<div class="head"><h3><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></h3>' +
         '<button class="btn-green-out" data-action="approveScale" data-pid="'+p.id+'"'+(readyForScale?'':' style="opacity:.45;"')+'>APROBAR PARA ESCALA</button></div>' +
-      '<div class="section-title" style="margin-top:0;">Checklist de optimización</div>' +
 
+      '<div class="section-title" style="margin-top:0;">Resumen de Testeo</div>' +
+      summaryKvBlock(testSum) +
+
+      '<div class="section-title">Tablero de Optimización</div>' +
+      '<div class="table-wrap">'+optimizacionDaysTable(p)+'</div>' +
+      '<button class="btn-ghost" data-action="addOptimizacionDay" data-pid="'+p.id+'" style="margin-bottom:14px;">+ Agregar día</button>' +
+
+      '<div class="section-title">Checklist de optimización</div>' +
       checkRow(p,'checklist.productoDigital','Producto digital') +
       '<div class="field"><label>Link de acceso al producto</label><input type="text" data-pid="'+p.id+'" data-field="checklist.productoDigitalLink" value="'+esc(p.checklist.productoDigitalLink)+'"></div>' +
 
-      checkRow(p,'checklist.comentariosPositivos','Comentarios positivos configurados') +
-      checkRow(p,'checklist.pixelConfigurado','Pixel configurado') +
-      checkRow(p,'checklist.upsell','Tiene Upsell') +
-      checkRow(p,'checklist.sendyConfigurado','Upsell configurado en Sendy') +
-      checkRow(p,'checklist.flujoOptimizado','Flujo optimizado') +
-      (!p.checklist.flujoOptimizado ? '<div class="cmd-item warn" style="margin-top:10px;"><div class="txt">⚠ Optimizar flujo y volver a lanzar</div></div>' : '') +
+      '<div class="section-title">Optimización del producto</div>' +
+      '<div style="font-size:.85rem;color:var(--text2);margin-bottom:8px;">¿Qué falta optimizar?</div>' +
+      checkRow(p,'checklist.optimizacionTareas.necesitaFlujo','Flujo') +
+      checkRow(p,'checklist.optimizacionTareas.necesitaCreativos','Creativos') +
+      (tareas.necesitaFlujo ? checkRow(p,'checklist.optimizacionTareas.flujoMejorado','¿Ya se mejoró el flujo?') : '') +
+      (tareas.necesitaCreativos ?
+        '<div class="field-grid">' +
+          field('¿Cuántos creativos se testearon?','number',p,'checklist.optimizacionTareas.creativosTesteados') +
+          field('¿Cuántos son ganadores?','number',p,'checklist.optimizacionTareas.creativosGanadores') +
+        '</div>' +
+        sharedField('Link de los creativos','text',p,'ads.driveLink')
+      : '') +
 
       '<div class="kv" style="margin-top:14px;">' +
         '<div class="l">Resultado de la optimización</div>' +
-        '<div class="v">'+(positivo ? '<span class="tag green">Positivo ✓ — $'+fmt(gananciaNeta)+'</span>' : '<span class="tag red">Negativo ✕ — $'+fmt(gananciaNeta)+'</span>')+'</div>' +
+        '<div class="v">'+(positivo ? '<span class="tag green">Positivo ✓ — $'+fmt(optSum.gananciaNeta)+'</span>' : '<span class="tag red">Negativo ✕ — $'+fmt(optSum.gananciaNeta)+'</span>')+'</div>' +
       '</div>' +
     '</div>';
   }).join('') || '<div class="empty-msg">No hay productos en optimización.</div>';
@@ -1542,7 +1654,10 @@ function renderEscala(){
     return '<div class="prep-card">' +
       '<div class="head"><h3><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></h3></div>' +
 
-      '<div class="section-title" style="margin-top:0;">Campañas de escala (por día)</div>' +
+      '<div class="section-title" style="margin-top:0;">Resumen de Optimización</div>' +
+      summaryKvBlock(sumDays(p.optimizacionDays)) +
+
+      '<div class="section-title">Campañas de escala (por día)</div>' +
       '<div class="table-wrap">'+scaleCampaignsTable(p)+'</div>' +
       '<button class="btn-ghost" data-action="addScaleCampaign" data-pid="'+p.id+'" style="margin-bottom:14px;">+ Agregar campaña del día</button>' +
 
@@ -1600,12 +1715,22 @@ function renderTesteoBoard(){
   var wrap = document.getElementById('testeoBoardList');
   if(!wrap) return;
   wrap.innerHTML = list.map(function(p){
+    var aprobado = !!p.testeoAprobado;
     return '<div class="prep-card">' +
-      '<div class="head"><h3><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></h3></div>' +
+      '<div class="head"><h3><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></h3>' +
+        (aprobado
+          ? '<span class="tag green">Aprobado para optimización ✓</span>'
+          : '<button class="btn-green-out" data-action="approveForOptimizacion" data-pid="'+p.id+'">Aprobar para optimización</button>'
+        ) +
+      '</div>' +
       '<div class="field-grid">' +
         sharedField('Fecha de testeo','date',p,'ads.fechaInicio') +
         sharedField('BM','text',p,'ads.bm') +
         sharedField('Cuenta publicitaria','text',p,'ads.cuentaPublicitaria') +
+      '</div>' +
+      '<div class="field-grid">' +
+        sharedField('Link de anuncios','text',p,'ads.driveLink') +
+        sharedField('Link del producto digital','text',p,'checklist.productoDigitalLink') +
       '</div>' +
       '<div class="field"><label>Frase activadora</label><textarea data-pid="'+p.id+'" data-field="ads.textoPrincipal" placeholder="Frase activadora">'+esc(p.ads.textoPrincipal)+'</textarea></div>' +
       '<div class="table-wrap" style="margin-top:12px;">'+testeoDaysTable(p)+'</div>' +
@@ -2374,12 +2499,27 @@ document.addEventListener('click', function(e){
   if(action === 'moveToOptimizacion'){ var p2 = findProduct(pid); p2.phase='optimizacion'; log('Producto movido de fase a Optimización', p2.name); saveDB(); renderApp(); toast(p2.name+' movido a Optimización'); }
   if(action === 'approveScale'){
     var p3 = findProduct(pid);
-    var gastoP = parseFloat(p3.opt.gasto)||0;
-    var factP = (parseFloat(p3.opt.compras)||0)*2;
-    var okChecklist = p3.checklist.productoDigital && p3.checklist.comentariosPositivos && p3.checklist.pixelConfigurado && p3.checklist.sendyConfigurado && p3.checklist.flujoOptimizado;
+    var tareas3 = p3.checklist.optimizacionTareas;
+    var flujoOk3 = !tareas3.necesitaFlujo || tareas3.flujoMejorado;
+    var creativosOk3 = !tareas3.necesitaCreativos || (parseFloat(tareas3.creativosGanadores)||0) > 0;
+    var okChecklist = p3.checklist.productoDigital && flujoOk3 && creativosOk3;
     if(!okChecklist){ toast('Completa el checklist de optimización antes de aprobar'); return; }
-    if((factP - gastoP) <= 0){ toast('El producto todavía no da ganancia neta positiva'); return; }
+    var optSum3 = sumDays(p3.optimizacionDays);
+    if(optSum3.gananciaNeta <= 0){ toast('El producto todavía no da ganancia neta positiva en el tablero de Optimización'); return; }
     p3.phase='escala'; log('Producto aprobado para escala', p3.name); saveDB(); renderApp(); toast(p3.name+' aprobado para Escala 🚀');
+  }
+  if(action === 'approveForOptimizacion'){
+    var pAO = findProduct(pid);
+    pAO.testeoAprobado = true;
+    log('Producto aprobado para optimización (desde Testeo)', pAO.name);
+    saveDB(); renderApp(); toast(pAO.name+' — resumen enviado a Optimización');
+  }
+  if(action === 'addOptimizacionDay'){
+    var pOD2 = findProduct(pid);
+    if(!Array.isArray(pOD2.optimizacionDays)) pOD2.optimizacionDays = [];
+    var baseDays = pOD2.optimizacionDays.length ? pOD2.optimizacionDays : pOD2.optDays;
+    pOD2.optimizacionDays.push({ id:uid('od2'), fecha:nextDayAfter(baseDays), pais:pOD2.country||'', cuentaPublicitaria:pOD2.ads.cuentaPublicitaria||'', bm:pOD2.ads.bm||'', gasto:0, mensajes:0, compras:0 });
+    saveDB(); renderApp();
   }
   if(action === 'archiveProduct'){ var p4 = findProduct(pid); p4.phase='archivado'; log('Producto archivado', p4.name); saveDB(); document.getElementById('fichaModalBg').classList.remove('show'); renderApp(); toast('Producto archivado'); }
 
