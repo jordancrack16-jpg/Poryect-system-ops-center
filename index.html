@@ -676,7 +676,7 @@ function emptyProduct(name, country, niche, responsible){
     scale: {
       campaigns: [], cbo:{ funciona:'testeando', presupuesto:'', cantidadCbo:0, anunciosActivos:0, anunciosEnCbo:0 },
       resumen:{ hoy:{gasto:'',facturacion:''}, ayer:{gasto:'',facturacion:''}, semana:{gasto:'',facturacion:''} },
-      upsells:[], anunciosGanadores:[], driveGanadoresGeneral:''
+      upsells:[], anunciosGanadores:[], anunciosWinners:[], driveGanadoresGeneral:''
     }
   };
 }
@@ -955,11 +955,12 @@ function migrateDB(d){
       p.checklist = { productoDigital:false, productoDigitalLink:'', optimizacionTareas:{ necesitaFlujo:false, flujoMejorado:false, necesitaCreativos:false, creativosTesteados:0, creativosGanadores:0 } };
     }
     if(!p.scale || typeof p.scale !== 'object'){
-      p.scale = { campaigns:[], cbo:{ funciona:'testeando', presupuesto:'', cantidadCbo:0, anunciosActivos:0, anunciosEnCbo:0 }, resumen:{ hoy:{gasto:'',facturacion:''}, ayer:{gasto:'',facturacion:''}, semana:{gasto:'',facturacion:''} }, upsells:[], anunciosGanadores:[], driveGanadoresGeneral:'' };
+      p.scale = { campaigns:[], cbo:{ funciona:'testeando', presupuesto:'', cantidadCbo:0, anunciosActivos:0, anunciosEnCbo:0 }, resumen:{ hoy:{gasto:'',facturacion:''}, ayer:{gasto:'',facturacion:''}, semana:{gasto:'',facturacion:''} }, upsells:[], anunciosGanadores:[], anunciosWinners:[], driveGanadoresGeneral:'' };
     } else {
       if(!Array.isArray(p.scale.campaigns)) p.scale.campaigns = [];
       if(!Array.isArray(p.scale.upsells)) p.scale.upsells = [];
       if(!Array.isArray(p.scale.anunciosGanadores)) p.scale.anunciosGanadores = [];
+      if(!Array.isArray(p.scale.anunciosWinners)) p.scale.anunciosWinners = [];
       if(!p.scale.cbo || typeof p.scale.cbo !== 'object'){ p.scale.cbo = { funciona:'testeando', presupuesto:'', cantidadCbo:0, anunciosActivos:0, anunciosEnCbo:0 }; }
       if(!p.scale.resumen || typeof p.scale.resumen !== 'object'){ p.scale.resumen = { hoy:{gasto:'',facturacion:''}, ayer:{gasto:'',facturacion:''}, semana:{gasto:'',facturacion:''} }; }
       else{
@@ -1661,14 +1662,9 @@ function renderEscala(){
       '<div class="table-wrap">'+scaleCampaignsTable(p)+'</div>' +
       '<button class="btn-ghost" data-action="addScaleCampaign" data-pid="'+p.id+'" style="margin-bottom:14px;">+ Agregar campaña del día</button>' +
 
-      '<div class="section-title">CBO</div>' +
-      '<div class="field-grid">' +
-        selFieldFull('CBO funciona',p,'scale.cbo.funciona',['si','no','testeando'],{si:'Sí',no:'No',testeando:'Testeando'}) +
-        field('Presupuesto CBO','number',p,'scale.cbo.presupuesto') +
-        field('Cantidad de CBO','number',p,'scale.cbo.cantidadCbo') +
-        field('Anuncios activos','number',p,'scale.cbo.anunciosActivos') +
-        field('Anuncios dentro de CBO','number',p,'scale.cbo.anunciosEnCbo') +
-      '</div>' +
+      '<div class="section-title">Anuncios Winners</div>' +
+      '<div>'+anunciosWinnersBlock(p)+'</div>' +
+      '<button class="btn-ghost" data-action="addAnuncioWinner" data-pid="'+p.id+'" style="margin-bottom:14px;margin-top:10px;">+ Agregar anuncio winner</button>' +
 
       '<div class="section-title">Upsells</div>' +
       '<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Precio</th><th>Ventas</th><th>Conversión %</th><th>Facturación</th><th>Estado</th><th>Link del producto</th><th>Copy del producto</th><th></th></tr></thead>' +
@@ -1763,6 +1759,16 @@ function scaleCampaignsTable(p){
   }).join('');
   return '<table><thead><tr><th>Fecha</th><th>País</th><th>Cuenta publicitaria</th><th>BM</th><th>Gasto</th><th>Mensajes</th><th>Compras</th><th>Facturación</th><th>Ganancia neta</th><th>% Conv.</th><th>Costo/msj</th><th>Costo/compra</th><th>ROAS</th><th></th></tr></thead>' +
     '<tbody>'+(rows||'<tr><td colspan="14" class="empty-msg">Sin campañas registradas aún</td></tr>')+'</tbody></table>';
+}
+function anunciosWinnersBlock(p){
+  var items = (p.scale.anunciosWinners||[]).map(function(a, idx){
+    return '<div class="spy-entry">' +
+      '<div class="spy-entry-head"><span>Anuncio winner '+(idx+1)+'</span><button class="mini-del" data-action="delArrItem" data-pid="'+p.id+'" data-arr="scale.anunciosWinners" data-idx="'+idx+'">✕</button></div>' +
+      '<label>Nombre del anuncio winner</label><input type="text" placeholder="Nombre del anuncio" value="'+esc(a.nombre)+'" data-pid="'+p.id+'" data-field="scale.anunciosWinners.'+idx+'.nombre">' +
+      '<label>Link del anuncio</label><input type="text" placeholder="Link del anuncio" value="'+esc(a.link)+'" data-pid="'+p.id+'" data-field="scale.anunciosWinners.'+idx+'.link">' +
+    '</div>';
+  }).join('');
+  return items || '<div class="empty-msg">Todavía no hay anuncios winners registrados.</div>';
 }
 function winningAdsWarehouse(p){
   var items = p.scale.anunciosGanadores.map(function(a, idx){
@@ -2526,6 +2532,7 @@ document.addEventListener('click', function(e){
   if(action === 'addScaleCampaign'){ var p6 = findProduct(pid); p6.scale.campaigns.push({id:uid('sc'),fecha:today(),pais:p6.country,cuentaPublicitaria:'',bm:'',gasto:0,mensajes:0,compras:0}); saveDB(); renderApp(); }
   if(action === 'addUpsell'){ var p8 = findProduct(pid); p8.scale.upsells.push({id:uid('up'),nombre:'',precio:0,ventas:0,conversion:0,facturacion:0,estado:'testeando',linkProducto:'',copyProducto:''}); saveDB(); renderApp(); }
   if(action === 'addWinningAd'){ var p9 = findProduct(pid); p9.scale.anunciosGanadores.push({id:uid('ag'),fecha:today(),nombre:'',linkVideo:'',linkDrive:'',validado:false,tarea:{responsable:'Cami',fecha:today(),prioridad:'media',estado:'pendiente'}}); saveDB(); renderApp(); }
+  if(action === 'addAnuncioWinner'){ var pAW = findProduct(pid); if(!Array.isArray(pAW.scale.anunciosWinners)) pAW.scale.anunciosWinners = []; pAW.scale.anunciosWinners.push({id:uid('aw'),nombre:'',link:''}); saveDB(); renderApp(); }
   if(action === 'validateAd'){
     var p10 = findProduct(pid);
     var adIdx = parseInt(el.getAttribute('data-idx'),10);
