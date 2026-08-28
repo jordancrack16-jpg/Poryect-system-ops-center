@@ -2369,7 +2369,9 @@ function fbCommentsBlock(t){
   var rows = entries.map(function(entry, idx){
     var tagsArr = entry.tags && entry.tags.length ? entry.tags : [''];
     var tagsHtml = tagsArr.map(function(tag, tidx){
-      return '<div class="boardlink-row"><input type="text" placeholder="Etiqueta '+(tidx+1)+'" value="'+esc(tag)+'" data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.tags.'+tidx+'">' +
+      var options = '<option value="">— Elegir producto —</option>' +
+        db.products.map(function(p){ return '<option value="'+p.id+'"'+(tag===p.id?' selected':'')+'>'+esc(p.name)+'</option>'; }).join('');
+      return '<div class="boardlink-row"><select data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.tags.'+tidx+'">'+options+'</select>' +
         (tagsArr.length>1 ? '<button class="mini-del" data-action="delTaskArr" data-wtid="'+t.id+'" data-arr="fbEntries.'+idx+'.tags" data-idx="'+tidx+'">✕</button>' : '') +
       '</div>';
     }).join('');
