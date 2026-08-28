@@ -223,9 +223,15 @@
   .person-tasks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
 
   .html-block{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
-  .html-block textarea{width:100%;min-height:90px;font-family:'Courier New',monospace;font-size:.75rem;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);resize:vertical;}
-  .html-preview{margin-top:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;}
-  .html-preview iframe{width:100%;height:220px;border:none;display:block;}
+  .html-block textarea{width:100%;min-height:140px;font-family:'Courier New',monospace;font-size:.75rem;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);resize:vertical;}
+  .html-block.lesson-view{padding:0;overflow:hidden;background:#000;}
+  .lesson-view-head{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--panel2);}
+  .lesson-badge{width:26px;height:26px;border-radius:8px;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0;}
+  .lesson-view-head h4{font-size:.88rem;font-weight:700;color:var(--text);}
+  .html-preview{position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden;}
+  .html-preview iframe{position:absolute;inset:0;width:100%;height:100%;border:none;display:block;}
+  .lesson-actions{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;background:var(--panel2);}
+  .lesson-actions button{flex:1;min-width:140px;}
   .sendy-account{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border);}
   .spy-entry{margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border);}
   .spy-entry .spy-entry-head{font-size:.68rem;color:var(--text2);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;}
@@ -2421,17 +2427,33 @@ function getTutorialContent(tutId){
 }
 function escAttr(s){ return (s===undefined||s===null) ? '' : String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
+var tutEditMode = {};
 function renderTutorialCourse(){
   var wrap = document.getElementById('tutorialCourse');
   wrap.innerHTML = TUTORIAL_CATALOG.map(function(t, idx){
     var content = getTutorialContent(t.id);
 
     var blocksHtml = content.htmlBlocks.map(function(b, bidx){
-      return '<div class="html-block">' +
-        '<div class="field"><label>Nombre del archivo</label><input type="text" placeholder="Ej: Guion de la clase" value="'+esc(b.nombre)+'" data-tut="'+t.id+'" data-field="htmlBlocks.'+bidx+'.nombre"></div>' +
-        '<div class="field"><label>Código HTML de este archivo</label><textarea data-tut="'+t.id+'" data-field="htmlBlocks.'+bidx+'.html" placeholder="Pega aquí el HTML (puede ser un embed de video, texto con formato, etc.)">'+esc(b.html)+'</textarea></div>' +
-        (b.html ? '<div class="html-preview"><iframe sandbox="allow-scripts allow-same-origin" srcdoc="'+escAttr(b.html)+'"></iframe></div>' : '') +
-        '<button class="btn-danger-out" data-action="delHtmlBlock" data-tut="'+t.id+'" data-idx="'+bidx+'">✕ Quitar este archivo</button>' +
+      var key = t.id+'_'+bidx;
+      var editing = tutEditMode.hasOwnProperty(key) ? tutEditMode[key] : !b.html;
+      var title = b.nombre ? esc(b.nombre) : ('Archivo '+(bidx+1));
+      if(editing){
+        return '<div class="html-block">' +
+          '<div class="field"><label>Nombre del archivo</label><input type="text" placeholder="Ej: Guion de la clase" value="'+esc(b.nombre)+'" data-tut="'+t.id+'" data-field="htmlBlocks.'+bidx+'.nombre"></div>' +
+          '<div class="field"><label>Código HTML de este archivo</label><textarea data-tut="'+t.id+'" data-field="htmlBlocks.'+bidx+'.html" placeholder="Pega aquí el HTML (puede ser un embed de video, texto con formato, etc.)">'+esc(b.html)+'</textarea></div>' +
+          '<div class="lesson-actions">' +
+            (b.html ? '<button class="btn-purple-out" data-action="toggleTutEdit" data-tut="'+t.id+'" data-idx="'+bidx+'">▶ Ver video</button>' : '') +
+            '<button class="btn-danger-out" data-action="delHtmlBlock" data-tut="'+t.id+'" data-idx="'+bidx+'">✕ Quitar este archivo</button>' +
+          '</div>' +
+        '</div>';
+      }
+      return '<div class="html-block lesson-view">' +
+        '<div class="lesson-view-head"><span class="lesson-badge">'+(bidx+1)+'</span><h4>'+title+'</h4></div>' +
+        '<div class="html-preview"><iframe sandbox="allow-scripts allow-same-origin" srcdoc="'+escAttr(b.html)+'"></iframe></div>' +
+        '<div class="lesson-actions">' +
+          '<button class="btn-ghost" data-action="toggleTutEdit" data-tut="'+t.id+'" data-idx="'+bidx+'">✏️ Editar código</button>' +
+          '<button class="btn-danger-out" data-action="delHtmlBlock" data-tut="'+t.id+'" data-idx="'+bidx+'">✕ Quitar este archivo</button>' +
+        '</div>' +
       '</div>';
     }).join('');
 
@@ -2774,6 +2796,16 @@ document.addEventListener('click', function(e){
     saveDB(); renderWeekBoard();
   }
 
+  if(action === 'toggleTutEdit'){
+    var tutIdE = el.getAttribute('data-tut');
+    var idxE = parseInt(el.getAttribute('data-idx'),10);
+    var contentE = getTutorialContent(tutIdE);
+    var blockE = contentE.htmlBlocks[idxE];
+    var keyE = tutIdE+'_'+idxE;
+    var currentE = tutEditMode.hasOwnProperty(keyE) ? tutEditMode[keyE] : !(blockE && blockE.html);
+    tutEditMode[keyE] = !currentE;
+    renderTutorialCourse();
+  }
   if(action === 'addHtmlBlock'){
     var contentA = getTutorialContent(el.getAttribute('data-tut'));
     contentA.htmlBlocks.push({ nombre:'', html:'' });
