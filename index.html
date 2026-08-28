@@ -924,7 +924,6 @@ function migrateDB(d){
         if(entry.nombre === undefined) entry.nombre = '';
         if(entry.link === undefined) entry.link = '';
         if(entry.revisado === undefined) entry.revisado = false;
-        if(!Array.isArray(entry.tags) || entry.tags.length===0) entry.tags = [''];
       });
     }
   });
@@ -2367,27 +2366,19 @@ function compraDigitalFieldsBlock(p){
 function fbCommentsBlock(t){
   var entries = t.fbEntries || [];
   var rows = entries.map(function(entry, idx){
-    var tagsArr = entry.tags && entry.tags.length ? entry.tags : [''];
-    var tagsHtml = tagsArr.map(function(tag, tidx){
-      var options = '<option value="">— Elegir producto —</option>' +
-        db.products.map(function(p){ return '<option value="'+p.id+'"'+(tag===p.id?' selected':'')+'>'+esc(p.name)+'</option>'; }).join('');
-      return '<div class="boardlink-row"><select data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.tags.'+tidx+'">'+options+'</select>' +
-        (tagsArr.length>1 ? '<button class="mini-del" data-action="delTaskArr" data-wtid="'+t.id+'" data-arr="fbEntries.'+idx+'.tags" data-idx="'+tidx+'">✕</button>' : '') +
-      '</div>';
-    }).join('');
     return '<div class="spy-entry">' +
-      '<div class="spy-entry-head"><span>Producto '+(idx+1)+'</span>' +
+      '<div class="spy-entry-head"><span>Página '+(idx+1)+'</span>' +
         '<label class="check-row" style="margin:0;gap:6px;"><input type="checkbox" '+(entry.revisado?'checked':'')+' data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.revisado"> Revisado</label>' +
         '<button class="mini-del" data-action="delFbEntry" data-wtid="'+t.id+'" data-idx="'+idx+'">✕</button>' +
       '</div>' +
-      '<label>Etiquetas del producto</label>' + tagsHtml +
-      '<button class="btn-ghost add-link-btn" data-action="addTaskArr" data-wtid="'+t.id+'" data-arr="fbEntries.'+idx+'.tags" style="width:100%;margin-bottom:8px;">+ etiqueta</button>' +
-      '<label>Nombre del producto</label><input type="text" placeholder="Nombre del producto" value="'+esc(entry.nombre)+'" data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.nombre">' +
-      '<label>Link de la página de Facebook</label><input type="text" placeholder="https://facebook.com/..." value="'+esc(entry.link)+'" data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.link">' +
+      '<label>Nombre de la página</label><input type="text" placeholder="Nombre de la página" value="'+esc(entry.nombre)+'" data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.nombre">' +
+      '<label>Link de la página de Facebook</label><div class="boardlink-row"><input type="text" placeholder="https://facebook.com/..." value="'+esc(entry.link)+'" data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.link">' +
+        (entry.link ? '<button class="mini-open" data-action="openLink" data-val="'+esc(entry.link)+'" title="Abrir en pestaña nueva">↗</button>' : '') +
+      '</div>' +
     '</div>';
   }).join('');
-  return '<label>Productos a revisar</label>' + (rows || '<div style="font-size:.75rem;color:var(--text2);margin-bottom:8px;">Sin productos agregados todavía</div>') +
-    '<button class="btn-ghost" data-action="addFbEntry" data-wtid="'+t.id+'" style="width:100%;margin-top:2px;">+ Agregar producto</button>';
+  return '<label>Páginas a revisar</label>' + (rows || '<div style="font-size:.75rem;color:var(--text2);margin-bottom:8px;">Sin páginas agregadas todavía</div>') +
+    '<button class="btn-ghost" data-action="addFbEntry" data-wtid="'+t.id+'" style="width:100%;margin-top:2px;">+ Agregar página</button>';
 }
 function spyEntriesBlock(t){
   var ids = t.spyIds || [];
@@ -2772,7 +2763,7 @@ document.addEventListener('click', function(e){
     var taskFb = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
     if(!taskFb) return;
     if(!Array.isArray(taskFb.fbEntries)) taskFb.fbEntries = [];
-    taskFb.fbEntries.push({ id: uid('fbe'), nombre:'', link:'', tags:[''], revisado:false });
+    taskFb.fbEntries.push({ id: uid('fbe'), nombre:'', link:'', revisado:false });
     saveDB(); renderWeekBoard();
   }
   if(action === 'delFbEntry'){
