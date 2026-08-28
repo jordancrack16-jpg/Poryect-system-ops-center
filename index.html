@@ -755,7 +755,8 @@ var TASK_CATALOG = [
   { id:'campanas_escala', label:'Lanzamiento de campañas de escala', fieldType:'status' },
   { id:'compra_digital', label:'Compra de productos digitales', fieldType:'link', linkLabel:'Link del producto comprado' },
   { id:'revision_chats', label:'Chats / Flujos 3 por día', fieldType:'rounds3' },
-  { id:'revision_campanas', label:'Revisión de campañas (x3 al día)', fieldType:'rounds3' }
+  { id:'revision_campanas', label:'Revisión de campañas (x3 al día)', fieldType:'rounds3' },
+  { id:'revision_fb_comentarios', label:'Revisión de Comentarios de Facebook', fieldType:'fbComentarios' }
 ];
 var DAY_LABELS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 
@@ -914,6 +915,17 @@ function migrateDB(d){
     }
     if(t.taskTypeId === 'investigacion'){
       if(!Array.isArray(t.spyIds)) t.spyIds = [];
+    }
+    if(t.taskTypeId === 'revision_fb_comentarios'){
+      if(!Array.isArray(t.fbEntries)) t.fbEntries = [];
+      t.fbEntries.forEach(function(entry){
+        if(!entry || typeof entry !== 'object') return;
+        if(!entry.id) entry.id = uid('fbe');
+        if(entry.nombre === undefined) entry.nombre = '';
+        if(entry.link === undefined) entry.link = '';
+        if(entry.revisado === undefined) entry.revisado = false;
+        if(!Array.isArray(entry.tags) || entry.tags.length===0) entry.tags = [''];
+      });
     }
   });
   if(!d.tutorialContent || typeof d.tutorialContent !== 'object'){ d.tutorialContent = {}; }
@@ -2256,6 +2268,9 @@ function taskCardHTML(t){
   } else if(t.taskTypeId === 'ideas_upsell'){
     bodyHTML = fechaBlock + statusBlock + upsellLinksBlock(t);
 
+  } else if(t.taskTypeId === 'revision_fb_comentarios'){
+    bodyHTML = fechaBlock + statusBlock + fbCommentsBlock(t);
+
   } else {
     var linksBlockDefault = taskLinksBlock(t, 'links', 'Links', type.linkLabel||'Link');
     bodyHTML = fechaBlock + statusBlock + linksBlockDefault + roundsBlock;
@@ -2348,6 +2363,29 @@ function compraDigitalFieldsBlock(p){
     cdText(p, 'cuentaSendy', 'Cuenta de Sendy', 'Ej: equipo@dominio.com') +
     cdText(p, 'correoSendy', 'Correo de Sendy', 'Ej: equipo@dominio.com') +
     cdTextarea(p, 'textoBienvenida', 'Texto de bienvenida', 'Escribe aquí el texto de bienvenida / agradecimiento');
+}
+function fbCommentsBlock(t){
+  var entries = t.fbEntries || [];
+  var rows = entries.map(function(entry, idx){
+    var tagsArr = entry.tags && entry.tags.length ? entry.tags : [''];
+    var tagsHtml = tagsArr.map(function(tag, tidx){
+      return '<div class="boardlink-row"><input type="text" placeholder="Etiqueta '+(tidx+1)+'" value="'+esc(tag)+'" data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.tags.'+tidx+'">' +
+        (tagsArr.length>1 ? '<button class="mini-del" data-action="delTaskArr" data-wtid="'+t.id+'" data-arr="fbEntries.'+idx+'.tags" data-idx="'+tidx+'">✕</button>' : '') +
+      '</div>';
+    }).join('');
+    return '<div class="spy-entry">' +
+      '<div class="spy-entry-head"><span>Producto '+(idx+1)+'</span>' +
+        '<label class="check-row" style="margin:0;gap:6px;"><input type="checkbox" '+(entry.revisado?'checked':'')+' data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.revisado"> Revisado</label>' +
+        '<button class="mini-del" data-action="delFbEntry" data-wtid="'+t.id+'" data-idx="'+idx+'">✕</button>' +
+      '</div>' +
+      '<label>Etiquetas del producto</label>' + tagsHtml +
+      '<button class="btn-ghost add-link-btn" data-action="addTaskArr" data-wtid="'+t.id+'" data-arr="fbEntries.'+idx+'.tags" style="width:100%;margin-bottom:8px;">+ etiqueta</button>' +
+      '<label>Nombre del producto</label><input type="text" placeholder="Nombre del producto" value="'+esc(entry.nombre)+'" data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.nombre">' +
+      '<label>Link de la página de Facebook</label><input type="text" placeholder="https://facebook.com/..." value="'+esc(entry.link)+'" data-wt="'+t.id+'" data-field="fbEntries.'+idx+'.link">' +
+    '</div>';
+  }).join('');
+  return '<label>Productos a revisar</label>' + (rows || '<div style="font-size:.75rem;color:var(--text2);margin-bottom:8px;">Sin productos agregados todavía</div>') +
+    '<button class="btn-ghost" data-action="addFbEntry" data-wtid="'+t.id+'" style="width:100%;margin-top:2px;">+ Agregar producto</button>';
 }
 function spyEntriesBlock(t){
   var ids = t.spyIds || [];
@@ -2644,6 +2682,7 @@ document.addEventListener('click', function(e){
     if(newTaskType === 'edicion_anuncios'){ newTask.linksArchivos=['']; newTask.textoAnuncio=''; newTask.fraseActivadora=''; }
     if(newTaskType === 'revision_chats'){ newTask.sendyAccounts=[{correo:'',contrasena:''}]; }
     if(newTaskType === 'investigacion'){ newTask.spyIds=[]; }
+    if(newTaskType === 'revision_fb_comentarios'){ newTask.fbEntries=[]; }
     db.weekTasks.push(newTask);
     log('Tarea asignada: '+taskTypeById(newTask.taskTypeId).label, newTask.assignee);
     saveDB();
@@ -2727,6 +2766,19 @@ document.addEventListener('click', function(e){
     db.spyLinks = db.spyLinks.filter(function(l){ return l.id !== slidD; });
     saveDB(); renderApp();
   }
+  if(action === 'addFbEntry'){
+    var taskFb = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
+    if(!taskFb) return;
+    if(!Array.isArray(taskFb.fbEntries)) taskFb.fbEntries = [];
+    taskFb.fbEntries.push({ id: uid('fbe'), nombre:'', link:'', tags:[''], revisado:false });
+    saveDB(); renderWeekBoard();
+  }
+  if(action === 'delFbEntry'){
+    var taskFbD = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wtid'); });
+    if(!taskFbD || !Array.isArray(taskFbD.fbEntries)) return;
+    taskFbD.fbEntries.splice(parseInt(el.getAttribute('data-idx'),10),1);
+    saveDB(); renderWeekBoard();
+  }
 
   if(action === 'addHtmlBlock'){
     var contentA = getTutorialContent(el.getAttribute('data-tut'));
@@ -2757,7 +2809,8 @@ document.addEventListener('change', function(e){
   if(el.hasAttribute('data-wt') && el.hasAttribute('data-field')){
     var task = db.weekTasks.find(function(t){ return t.id === el.getAttribute('data-wt'); });
     if(!task) return;
-    setDeep(task, el.getAttribute('data-field'), el.value);
+    var wtVal = el.type === 'checkbox' ? el.checked : el.value;
+    setDeep(task, el.getAttribute('data-field'), wtVal);
     saveDB(); renderWeekBoard();
   }
   if(el.hasAttribute('data-tut') && el.hasAttribute('data-field')){
