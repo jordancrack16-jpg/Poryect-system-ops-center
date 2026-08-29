@@ -382,7 +382,7 @@
         <div id="histList"></div>
       </div>
 
-      <div class="view" id="view-productos"><div class="page-head"><div><h1>📦 Productos</h1><p>Todos los productos del sistema</p></div></div><div id="productosList"></div></div>
+      <div class="view" id="view-productos"><div class="page-head"><div><h1>📦 Productos</h1><p>Todos los productos del sistema</p></div><button class="btn-primary" data-action="openNewProduct">+ Agregar producto</button></div><div id="productosList"></div></div>
       <div class="view" id="view-campanas"><div class="page-head"><div><h1>📣 Campañas</h1><p>Historial de entradas de campaña por producto</p></div></div><div id="campanasList"></div></div>
       <div class="view" id="view-flujos"><div class="page-head"><div><h1>💬 Flujos WhatsApp</h1><p>Palabra clave y estado de flujo por producto</p></div></div><div id="flujosList"></div></div>
       <div class="view" id="view-anuncios"><div class="page-head"><div><h1>🎬 Anuncios</h1><p>Anuncios en testeo y anuncios ganadores en escala</p></div></div><div id="anunciosList"></div></div>
@@ -474,6 +474,17 @@
     <div class="field"><label>Tiempo estimado</label><input type="text" id="at_time" placeholder="Ej: 45 min"></div>
     <div class="field"><label>Fecha</label><input type="date" id="at_fecha"></div>
     <div class="actions"><button class="cancel" data-action="closeAssignTask">Cancelar</button><button class="save" data-action="saveAssignTask">Asignar</button></div>
+  </div>
+</div>
+
+<div class="small-modal-bg" id="moveTaskModalBg">
+  <div class="small-modal">
+    <h3>Mover o duplicar tarea</h3>
+    <div class="field"><label>Día destino</label>
+      <select id="mt_day"><option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option></select>
+    </div>
+    <p style="font-size:.75rem;color:var(--text2);margin:-4px 0 4px;">"Mover" cambia esta tarea a ese día. "Duplicar" crea una copia con los mismos datos en ese día, y esta tarea se queda donde está.</p>
+    <div class="actions" style="flex-wrap:wrap;"><button class="cancel" data-action="closeMoveTask" style="flex:1 1 100%;">Cancelar</button><button class="save" data-action="doMoveTask" style="background:var(--blue);">Mover aquí</button><button class="save" data-action="doDuplicateTask">Duplicar aquí</button></div>
   </div>
 </div>
 
@@ -1217,6 +1228,7 @@ document.addEventListener('change', function(e){
 });
 
 function handleFieldSideEffects(p, field, before, after){
+  if(field === 'phase' && after !== before){ log('Producto movido de fase: '+phaseLabel(before)+' → '+phaseLabel(after), p.name); toast(p.name+' movido a '+phaseLabel(after)); }
   if(field === 'ads.status' && after === 'terminado' && before !== 'terminado'){ log('Anuncios terminados', p.name); toast('Anuncios de "'+p.name+'" marcados como terminados'); }
   if(field === 'funnel.status' && after === 'terminado' && before !== 'terminado'){ log('Flujo terminado', p.name); toast('Flujo de "'+p.name+'" terminado'); }
   if(field === 'checklist.sendyConfigurado' && after === true){ log('Sendy configurado', p.name); }
@@ -1925,11 +1937,16 @@ function phaseLabel(phase){
   return { preparacion:'Pre-Testeo', testeo:'Testeo', optimizacion:'Optimización', escala:'Escala', test_fallido:'Test fallido', archivado:'Archivado' }[phase] || phase;
 }
 
+var ALL_PHASES = ['preparacion','testeo','optimizacion','escala','test_fallido','archivado'];
 function renderProductosList(){
-  document.getElementById('productosList').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Fase</th><th>País</th><th>Responsable</th><th>Keyword</th></tr></thead><tbody>' +
-    db.products.map(function(p){
-      return '<tr><td><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></td><td>'+phaseLabel(p.phase)+'</td><td>'+esc(p.country)+'</td><td>'+esc(p.responsible)+'</td><td>'+esc(p.keyword)+'</td></tr>';
-    }).join('') + '</tbody></table></div>';
+  document.getElementById('productosList').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Fase</th><th>País</th><th>Responsable</th><th>Keyword</th><th></th></tr></thead><tbody>' +
+    (db.products.length ? db.products.map(function(p){
+      var phaseOpts = ALL_PHASES.map(function(ph){ return '<option value="'+ph+'"'+(ph===p.phase?' selected':'')+'>'+phaseLabel(ph)+'</option>'; }).join('');
+      return '<tr><td><span class="prod-link" data-action="openFicha" data-pid="'+p.id+'">'+esc(p.name)+'</span></td>' +
+        '<td><select data-pid="'+p.id+'" data-field="phase">'+phaseOpts+'</select></td>' +
+        '<td>'+esc(p.country)+'</td><td>'+esc(p.responsible)+'</td><td>'+esc(p.keyword)+'</td>' +
+        '<td><button class="mini-del" data-action="delProduct" data-pid="'+p.id+'" title="Eliminar producto">✕ Eliminar</button></td></tr>';
+    }).join('') : '<tr><td colspan="6" class="empty-msg">Sin productos todavía</td></tr>') + '</tbody></table></div>';
 }
 function renderCampanasList(){
   var rows = [];
@@ -2288,6 +2305,7 @@ function taskCardHTML(t){
     '<div class="tmeta"><span class="avatar" style="margin:0;">'+t.assignee.slice(0,2).toUpperCase()+'</span><span>'+esc(t.assignee)+'</span><span>⏱ '+esc(t.tiempoEstimado||'—')+'</span></div>' +
     (t.producto ? '<div class="tprod">🔗 '+esc(productLabel(t.producto))+'</div>' : '') +
     bodyHTML +
+    '<button class="btn-purple-out tdel" data-action="openMoveTask" data-wtid="'+t.id+'" style="width:100%;margin-top:14px;">📋 Mover / Duplicar a otro día</button>' +
     '<button class="btn-danger-out tdel" data-action="delWeekTask" data-wtid="'+t.id+'">✕ Quitar tarea</button>' +
   '</div>';
 }
@@ -2531,6 +2549,16 @@ document.addEventListener('click', function(e){
     toast(Math.min(lines.length,space)+' links agregados');
   }
 
+  if(action === 'delProduct'){
+    var pidDel = el.getAttribute('data-pid');
+    var pDel = findProduct(pidDel);
+    if(!pDel) return;
+    if(!confirm('¿Eliminar el producto "'+pDel.name+'"? Esta acción no se puede deshacer.')) return;
+    db.products = db.products.filter(function(x){ return x.id !== pidDel; });
+    db.spyLinks.forEach(function(l){ if(l.productId === pidDel) l.productId = null; });
+    log('Producto eliminado', pDel.name);
+    saveDB(); renderApp(); toast(pDel.name+' eliminado');
+  }
   if(action === 'openNewProduct'){ document.getElementById('newProductModalBg').classList.add('show'); }
   if(action === 'closeNewProduct'){ document.getElementById('newProductModalBg').classList.remove('show'); }
   if(action === 'saveNewProduct'){
@@ -2705,6 +2733,42 @@ document.addEventListener('click', function(e){
     assignTaskModal.classList.remove('show');
     renderWeekBoard();
     toast('Tarea asignada a '+newTask.assignee+' — '+DAY_LABELS[newTask.day]);
+  }
+
+  var moveTaskModal = document.getElementById('moveTaskModalBg');
+  if(action === 'openMoveTask'){
+    var wtM = db.weekTasks.find(function(x){ return x.id === el.getAttribute('data-wtid'); });
+    document.getElementById('mt_day').value = wtM ? wtM.day : 0;
+    window.__moveTaskTargetId = el.getAttribute('data-wtid');
+    moveTaskModal.classList.add('show');
+  }
+  if(action === 'closeMoveTask'){ moveTaskModal.classList.remove('show'); window.__moveTaskTargetId = null; }
+  if(action === 'doMoveTask'){
+    var idM = window.__moveTaskTargetId;
+    var taskM = db.weekTasks.find(function(x){ return x.id === idM; });
+    if(taskM){
+      var newDayM = parseInt(document.getElementById('mt_day').value,10);
+      taskM.day = newDayM;
+      log('Tarea movida a '+DAY_LABELS[newDayM], taskM.assignee);
+      saveDB(); renderWeekBoard();
+      toast('Tarea movida a '+DAY_LABELS[newDayM]);
+    }
+    moveTaskModal.classList.remove('show'); window.__moveTaskTargetId = null;
+  }
+  if(action === 'doDuplicateTask'){
+    var idD2 = window.__moveTaskTargetId;
+    var taskD2 = db.weekTasks.find(function(x){ return x.id === idD2; });
+    if(taskD2){
+      var newDayD2 = parseInt(document.getElementById('mt_day').value,10);
+      var clone = JSON.parse(JSON.stringify(taskD2));
+      clone.id = uid('wt');
+      clone.day = newDayD2;
+      db.weekTasks.push(clone);
+      log('Tarea duplicada a '+DAY_LABELS[newDayD2], clone.assignee);
+      saveDB(); renderWeekBoard();
+      toast('Tarea duplicada a '+DAY_LABELS[newDayD2]+' con los mismos datos');
+    }
+    moveTaskModal.classList.remove('show'); window.__moveTaskTargetId = null;
   }
 
   if(action === 'delWeekTask'){
